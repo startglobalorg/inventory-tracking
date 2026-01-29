@@ -1,0 +1,17 @@
+services:
+  inventory-app:
+    container_name: inventory_app
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: inventory-app:latest
+    restart: always
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - DATABASE_URL=/app/sqlite-data/sqlite.db
+      - SITE_PASSWORD=${SITE_PASSWORD:-START123!}
+      # You can add other env vars here
+    volumes:
+      - ./sqlite-data:/app/sqlite-data
