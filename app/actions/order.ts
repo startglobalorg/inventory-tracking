@@ -4,6 +4,7 @@ import { db } from '@/db/db';
 import { items, logs } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
+import { notifyLowStock } from './webhook';
 
 export async function submitOrder(
     cartItems: Record<string, number>,
@@ -67,6 +68,26 @@ export async function submitOrder(
             });
 
             console.log(`Logged change for ${currentItem.name}`);
+
+            // Check if item is now at or below minimum threshold
+            // Only notify when consuming items (negative changeAmount)
+            const wasAboveThreshold = currentItem.stock > currentItem.minThreshold;
+            const isNowAtOrBelowThreshold = newStock <= currentItem.minThreshold;
+
+            if (changeAmount < 0 && wasAboveThreshold && isNowAtOrBelowThreshold) {
+                // Trigger low stock webhook notification (don't await to avoid blocking)
+                notifyLowStock({
+                    id: currentItem.id,
+                    name: currentItem.name,
+                    sku: currentItem.sku,
+                    category: currentItem.category,
+                    stock: newStock,
+                    minThreshold: currentItem.minThreshold,
+                }).catch(error => {
+                    console.error('Failed to send low stock notification:', error);
+                    // Don't fail the order if webhook fails
+                });
+            }
         }
 
         revalidatePath('/');
