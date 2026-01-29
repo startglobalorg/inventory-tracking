@@ -46,9 +46,16 @@ RUN chown nextjs:nodejs .next
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 
+# Copy node_modules for drizzle-kit (needed for db:push)
+COPY --from=builder /app/node_modules ./node_modules
+
 # Copy database schema/migrations if needed (for db:push or seeding)
 COPY --from=builder /app/db ./db
 COPY --from=builder /app/drizzle.config.ts ./
+
+# Copy initialization scripts
+COPY --from=builder /app/scripts ./scripts
+RUN chmod +x ./scripts/start.sh
 
 USER nextjs
 
@@ -60,4 +67,4 @@ ENV HOSTNAME "0.0.0.0"
 
 # server.js is created by next build from the standalone output
 # https://nextjs.org/docs/pages/api-reference/next-config-js/output
-CMD ["node", "server.js"]
+CMD ["sh", "/app/scripts/start.sh"]
