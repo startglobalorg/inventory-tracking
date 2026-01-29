@@ -1,12 +1,14 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { useCart } from './CartProvider';
 import { submitOrder } from '@/app/actions/order';
 import { useToast } from './ToastProvider';
 import type { Item } from '@/db/schema';
 
 export function CartSummary({ allItems }: { allItems: Item[] }) {
+    const router = useRouter();
     const { items, totalItems, clearCart } = useCart();
     const { showToast } = useToast();
     const [isOpen, setIsOpen] = useState(false);
@@ -17,22 +19,50 @@ export function CartSummary({ allItems }: { allItems: Item[] }) {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+
         if (!userName.trim()) {
             showToast('Please enter your name', 'error');
             return;
         }
 
-        setIsSubmitting(true);
-        const result = await submitOrder(items, userName);
-        setIsSubmitting(false);
+        console.log('Starting order submission...');
+        console.log('Cart items:', items);
+        console.log('User name:', userName);
 
-        if (result.success) {
-            showToast('Order submitted successfully!', 'success');
-            clearCart();
-            setIsOpen(false);
-            setUserName('');
-        } else {
-            showToast(result.error || 'Failed to submit order', 'error');
+        setIsSubmitting(true);
+
+        try {
+            // Add timeout to prevent hanging indefinitely (30 seconds)
+            const timeoutPromise = new Promise<never>((_, reject) => {
+                setTimeout(() => reject(new Error('Request timed out')), 30000);
+            });
+
+            const result = await Promise.race([
+                submitOrder(items, userName),
+                timeoutPromise
+            ]);
+
+            console.log('Order result:', result);
+
+            if (result.success) {
+                showToast('Order submitted successfully!', 'success');
+                clearCart();
+                setIsOpen(false);
+                setUserName('');
+                // Force refresh the page data
+                router.refresh();
+            } else {
+                showToast(result.error || 'Failed to submit order', 'error');
+            }
+        } catch (error) {
+            console.error('Error in handleSubmit:', error);
+            if (error instanceof Error && error.message === 'Request timed out') {
+                showToast('Request timed out. Please check your connection and try again.', 'error');
+            } else {
+                showToast('An unexpected error occurred. Please try again.', 'error');
+            }
+        } finally {
+            setIsSubmitting(false);
         }
     };
 
