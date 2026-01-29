@@ -32,10 +32,8 @@ git pull
 
 ```bash
 # Create directory for persistent database storage
+# The startup script will automatically set the correct permissions
 mkdir -p /opt/inventory-tracking/sqlite-data
-
-# Set proper permissions (Docker will run as user 1001:1001)
-chown -R 1001:1001 /opt/inventory-tracking/sqlite-data
 ```
 
 ### 4. Build and Start the Application
@@ -173,10 +171,14 @@ docker-compose -f docker-compose.prod.yml up -d
 
 ### Fix permission issues
 
+Permissions are automatically handled by the startup script. If you still encounter issues:
+
 ```bash
-chown -R 1001:1001 /opt/inventory-tracking/sqlite-data
-chmod 755 /opt/inventory-tracking/sqlite-data
-chmod 644 /opt/inventory-tracking/sqlite-data/sqlite.db
+# Ensure the directory exists
+mkdir -p /opt/inventory-tracking/sqlite-data
+
+# Restart the container (it will set permissions automatically)
+docker-compose -f docker-compose.prod.yml restart
 ```
 
 ## Automatic Backups

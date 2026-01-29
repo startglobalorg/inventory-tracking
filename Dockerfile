@@ -32,6 +32,9 @@ ENV NODE_ENV production
 # Uncomment the following line in case you want to disable telemetry during runtime.
 # ENV NEXT_TELEMETRY_DISABLED 1
 
+# Install su-exec for running commands as different user
+RUN apk add --no-cache su-exec
+
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
 
@@ -57,7 +60,8 @@ COPY --from=builder /app/drizzle.config.ts ./
 COPY --from=builder /app/scripts ./scripts
 RUN chmod +x ./scripts/start.sh
 
-USER nextjs
+# Don't switch to USER nextjs here - the startup script will handle user switching
+# USER nextjs
 
 EXPOSE 3000
 
