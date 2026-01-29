@@ -1,5 +1,4 @@
 import Link from 'next/link';
-import Image from 'next/image';
 import { notFound } from 'next/navigation';
 import { db } from '@/db/db';
 import { items, logs } from '@/db/schema';
@@ -63,22 +62,6 @@ export default async function ItemDetailPage({
                     {/* Item Details */}
                     <div className="lg:col-span-2">
                         <div className="overflow-hidden rounded-lg bg-white shadow-sm dark:bg-slate-900">
-                            {/* Image Section */}
-                            <div className="relative h-64 w-full bg-slate-100 dark:bg-slate-800 sm:h-80">
-                                {currentItem.imageUrl ? (
-                                    <Image
-                                        src={currentItem.imageUrl}
-                                        alt={currentItem.name}
-                                        fill
-                                        className="object-cover"
-                                    />
-                                ) : (
-                                    <div className="flex h-full items-center justify-center text-8xl">
-                                        📦
-                                    </div>
-                                )}
-                            </div>
-
                             {/* Details Section */}
                             <div className="p-6">
                                 <div className="flex items-start justify-between">
@@ -159,15 +142,13 @@ export default async function ItemDetailPage({
                                             className="flex items-start gap-3 rounded-lg border border-slate-200 p-3 dark:border-slate-700"
                                         >
                                             <div
-                                                className={`mt-0.5 rounded-full p-1.5 ${log.reason === 'consumed'
-                                                        ? 'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400'
+                                                className={`mt-0.5 rounded-full w-2 h-2 ${log.reason === 'consumed'
+                                                        ? 'bg-red-600 dark:bg-red-400'
                                                         : log.reason === 'restocked'
-                                                            ? 'bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400'
-                                                            : 'bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400'
+                                                            ? 'bg-green-600 dark:bg-green-400'
+                                                            : 'bg-blue-600 dark:bg-blue-400'
                                                     }`}
-                                            >
-                                                {log.reason === 'consumed' ? '📉' : log.reason === 'restocked' ? '📈' : '⚙️'}
-                                            </div>
+                                            ></div>
                                             <div className="flex-1">
                                                 <p className="text-sm font-medium text-slate-900 dark:text-slate-50">
                                                     {log.reason.charAt(0).toUpperCase() + log.reason.slice(1)}

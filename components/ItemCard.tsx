@@ -1,5 +1,4 @@
 import Link from 'next/link';
-import Image from 'next/image';
 import type { Item } from '@/db/schema';
 
 export function ItemCard({ item }: { item: Item }) {
@@ -11,29 +10,15 @@ export function ItemCard({ item }: { item: Item }) {
             href={`/item/${item.id}`}
             className="group relative overflow-hidden rounded-lg bg-white shadow-sm transition-all hover:shadow-md dark:bg-slate-900"
         >
-            {/* Image */}
-            <div className="relative h-48 w-full overflow-hidden bg-slate-100 dark:bg-slate-800">
-                {item.imageUrl ? (
-                    <Image
-                        src={item.imageUrl}
-                        alt={item.name}
-                        fill
-                        className="object-cover transition-transform duration-300 group-hover:scale-105"
-                    />
-                ) : (
-                    <div className="flex h-full items-center justify-center text-6xl">
-                        📦
-                    </div>
-                )}
-                {isLowStock && (
-                    <div className="absolute right-2 top-2 rounded-full bg-orange-500 px-3 py-1 text-xs font-semibold text-white shadow-lg">
-                        Low Stock
-                    </div>
-                )}
-            </div>
-
             {/* Content */}
             <div className="p-4">
+                {isLowStock && (
+                    <div className="mb-2">
+                        <span className="rounded-full bg-orange-500 px-3 py-1 text-xs font-semibold text-white">
+                            Low Stock
+                        </span>
+                    </div>
+                )}
                 <h3 className="font-semibold text-slate-900 line-clamp-1 dark:text-slate-50">
                     {item.name}
                 </h3>

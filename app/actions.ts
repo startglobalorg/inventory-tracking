@@ -59,3 +59,33 @@ export async function incrementStock(itemId: string) {
 export async function decrementStock(itemId: string) {
     return updateStock(itemId, -1, 'consumed');
 }
+
+export async function createItem(formData: {
+    name: string;
+    sku: string;
+    stock: number;
+    minThreshold: number;
+    category: string;
+    quantityPerUnit: number;
+    unitName: string;
+}) {
+    try {
+        // Check if SKU already exists
+        const existing = await db.select().from(items).where(eq(items.sku, formData.sku)).limit(1);
+
+        if (existing.length > 0) {
+            return { success: false, error: 'SKU already exists' };
+        }
+
+        // Insert new item
+        await db.insert(items).values(formData);
+
+        revalidatePath('/');
+        revalidatePath('/restock');
+
+        return { success: true };
+    } catch (error) {
+        console.error('Error creating item:', error);
+        return { success: false, error: 'Failed to create item' };
+    }
+}

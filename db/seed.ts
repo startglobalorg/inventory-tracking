@@ -2,7 +2,7 @@ import { db } from './db';
 import { items, logs } from './schema';
 
 async function seed() {
-    console.log('🌱 Clearing database...');
+    console.log('Clearing database...');
 
     // Clear existing data
     await db.delete(logs);
@@ -53,13 +53,13 @@ async function seed() {
     ];
 
     const insertedItems = await db.insert(items).values(seedItems).returning();
-    console.log(`✅ Inserted ${insertedItems.length} items`);
-    console.log('🎉 Seeding completed!');
+    console.log(`Inserted ${insertedItems.length} items`);
+    console.log('Seeding completed!');
 
     process.exit(0);
 }
 
 seed().catch((error) => {
-    console.error('❌ Seeding failed:', error);
+    console.error('Seeding failed:', error);
     process.exit(1);
 });

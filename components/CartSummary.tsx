@@ -51,22 +51,22 @@ export function CartSummary({ allItems }: { allItems: Item[] }) {
     return (
         <>
             {/* Floating Bar */}
-            <div className="fixed bottom-0 left-0 z-40 w-full bg-slate-800 border-t border-slate-700 p-4 shadow-2xl safe-area-bottom">
-                <div className="container mx-auto flex items-center justify-between gap-4">
-                    <div className="flex items-center gap-3">
-                        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-600 font-bold text-white">
+            <div className="fixed bottom-0 left-0 z-40 w-full bg-slate-800 border-t border-slate-700 p-3 sm:p-4 shadow-2xl safe-area-bottom">
+                <div className="container mx-auto flex items-center justify-between gap-2 sm:gap-4">
+                    <div className="flex items-center gap-2 sm:gap-3">
+                        <div className="flex h-9 w-9 sm:h-10 sm:w-10 items-center justify-center rounded-full bg-blue-600 font-bold text-white text-sm sm:text-base">
                             {totalItems}
                         </div>
                         <div className="text-white">
-                            <p className="font-semibold">Items in basket</p>
-                            <p className="text-xs text-slate-400">Review to confirm</p>
+                            <p className="font-semibold text-sm sm:text-base">Items in basket</p>
+                            <p className="text-xs text-slate-400 hidden sm:block">Review to confirm</p>
                         </div>
                     </div>
                     <button
                         onClick={() => setIsOpen(true)}
-                        className="rounded-lg bg-green-600 px-6 py-2.5 font-bold text-white transition-colors hover:bg-green-700 active:scale-95"
+                        className="rounded-lg bg-green-600 px-4 sm:px-6 py-2 sm:py-2.5 text-sm sm:text-base font-bold text-white transition-colors hover:bg-green-700 active:scale-95"
                     >
-                        Review Order
+                        Review
                     </button>
                 </div>
             </div>
