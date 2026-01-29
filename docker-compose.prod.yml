@@ -7,7 +7,7 @@ services:
     image: inventory-app:latest
     restart: always
     ports:
-      - "3000:3000"
+      - "3001:3001"
     environment:
       - NODE_ENV=production
       - DATABASE_URL=/app/sqlite-data/sqlite.db
