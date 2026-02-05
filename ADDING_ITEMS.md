@@ -18,27 +18,30 @@ async function seed() {
   const seedItems = [
     {
       name: 'Red Bull Energy Drink',
-      sku: 'DRINK-RB-250',
+      sku: 'ENERGYD-REDBULL-250',
       stock: 48,
       minThreshold: 12,
       category: 'Energy Drinks',
-      imageUrl: 'URL_TO_IMAGE', // Optional
+      quantityPerUnit: 24,
+      unitName: 'case',
     },
     {
       name: 'Coca-Cola',
-      sku: 'DRINK-COKE-330',
+      sku: 'SOFTDRI-COCACOLA-330',
       stock: 60,
       minThreshold: 20,
       category: 'Soft Drinks',
-      imageUrl: 'URL_TO_IMAGE',
+      quantityPerUnit: 24,
+      unitName: 'case',
     },
     {
       name: 'Granola Bars - Mixed',
-      sku: 'SNACK-GB-MIX',
+      sku: 'SNACKS-NATURE-100',
       stock: 35,
       minThreshold: 10,
       category: 'Snacks',
-      imageUrl: 'URL_TO_IMAGE',
+      quantityPerUnit: 12,
+      unitName: 'box',
     },
     // Add more items here...
   ];
@@ -56,7 +59,17 @@ Then run:
 npm run db:seed
 ```
 
-## Option 2: Manual Database Insert (For Testing)
+## Option 2: Via Web UI (Recommended for Adding Single Items)
+
+The application includes a built-in "Add Item" page accessible from the main inventory page. This provides a user-friendly form with:
+- Auto-generated SKU from category-brand-size
+- Searchable brand dropdown with common brands
+- Input validation
+- Category dropdown for consistency
+
+Access it at: http://localhost:3000/add-item
+
+## Option 3: Manual Database Insert (For Advanced Users)
 
 You can also manually insert items using Drizzle Studio:
 
@@ -90,25 +103,28 @@ Each item has the following fields:
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
 | `name` | text | ✅ | Display name of the item |
-| `sku` | text | ✅ | Unique identifier/barcode |
+| `sku` | text | ✅ | Unique identifier (auto-generated in web UI) |
 | `stock` | integer | ✅ | Current stock quantity |
 | `minThreshold` | integer | ✅ | Minimum stock before warning |
 | `category` | text | ✅ | Category for organization |
-| `imageUrl` | text | ❌ | Optional product image URL |
+| `quantityPerUnit` | integer | ✅ | Items per batch (e.g., 24 for a case) |
+| `unitName` | text | ✅ | Unit name (e.g., 'case', 'box') |
 
 ## SKU Naming Convention
 
-Consider using a consistent SKU format for easy management:
+The web UI auto-generates SKUs using this format:
 
 ```
 CATEGORY-BRAND-SIZE
 ```
 
 Examples:
-- `DRINK-RB-250` (Red Bull 250ml)
-- `DRINK-COKE-330` (Coca-Cola 330ml)
-- `SNACK-CHIPS-100` (Chips 100g)
-- `WATER-STILL-500` (Still Water 500ml)
+- `ENERGYD-REDBULL-250` (Red Bull 250ml)
+- `SOFTDRI-COCACOLA-330` (Coca-Cola 330ml)
+- `SNACKS-LAYS-100` (Lays Chips 100g)
+- `WATER-EVIAN-500` (Evian Water 500ml)
+
+Note: Category and brand are truncated and sanitized automatically.
 
 ## Next Steps
 

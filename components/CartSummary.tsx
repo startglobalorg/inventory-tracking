@@ -25,10 +25,6 @@ export function CartSummary({ allItems }: { allItems: Item[] }) {
             return;
         }
 
-        console.log('Starting order submission...');
-        console.log('Cart items:', items);
-        console.log('User name:', userName);
-
         setIsSubmitting(true);
 
         try {
@@ -41,8 +37,6 @@ export function CartSummary({ allItems }: { allItems: Item[] }) {
                 submitOrder(items, userName),
                 timeoutPromise
             ]);
-
-            console.log('Order result:', result);
 
             if (result.success) {
                 showToast('Order submitted successfully!', 'success');

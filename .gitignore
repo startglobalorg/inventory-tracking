@@ -40,9 +40,6 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-# Claude files
-CLAUDE.md
-
 # Database files (should not be committed)
 sqlite.db
 sqlite-data/

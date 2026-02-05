@@ -52,14 +52,6 @@ export async function updateStock(
     }
 }
 
-export async function incrementStock(itemId: string) {
-    return updateStock(itemId, 1, 'restocked');
-}
-
-export async function decrementStock(itemId: string) {
-    return updateStock(itemId, -1, 'consumed');
-}
-
 export async function createItem(formData: {
     name: string;
     sku: string;

@@ -11,9 +11,6 @@ export async function submitOrder(
     userName: string
 ) {
     try {
-        console.log('Submitting order for user:', userName);
-        console.log('Cart items:', cartItems);
-
         // Validate input
         if (!userName || !userName.trim()) {
             return { success: false, error: 'User name is required' };
@@ -30,13 +27,10 @@ export async function submitOrder(
         for (const [itemId, changeAmount] of Object.entries(cartItems)) {
             if (changeAmount === 0) continue;
 
-            console.log(`Processing item ${itemId} with change ${changeAmount}`);
-
             // Get current item to check constraints
             const item = await db.select().from(items).where(eq(items.id, itemId)).limit(1);
 
             if (item.length === 0) {
-                console.log(`Item ${itemId} not found`);
                 continue;
             }
 
@@ -44,7 +38,6 @@ export async function submitOrder(
             const newStock = currentItem.stock + changeAmount;
 
             if (newStock < 0) {
-                console.log(`Insufficient stock for ${currentItem.name}`);
                 return {
                     success: false,
                     error: `Insufficient stock for ${currentItem.name}. Available: ${currentItem.stock}`
@@ -57,8 +50,6 @@ export async function submitOrder(
                 .set({ stock: newStock })
                 .where(eq(items.id, itemId));
 
-            console.log(`Updated stock for ${currentItem.name} to ${newStock}`);
-
             // Log the change
             await db.insert(logs).values({
                 itemId,
@@ -66,8 +57,6 @@ export async function submitOrder(
                 reason: changeAmount > 0 ? 'restocked' : 'consumed',
                 userName,
             });
-
-            console.log(`Logged change for ${currentItem.name}`);
 
             // Check if item is now at or below minimum threshold
             // Only notify when consuming items (negative changeAmount)
@@ -92,7 +81,6 @@ export async function submitOrder(
 
         revalidatePath('/');
         revalidatePath('/restock');
-        console.log('Order submitted successfully');
         return { success: true };
     } catch (error) {
         console.error('Error submitting order:', error);
