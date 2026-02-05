@@ -42,3 +42,10 @@ next-env.d.ts
 
 # Claude files
 CLAUDE.md
+
+# Database files (should not be committed)
+sqlite.db
+sqlite-data/
+*.db
+*.db-shm
+*.db-wal

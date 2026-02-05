@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import Image from "next/image";
+import { ToastProvider } from "@/components/ToastProvider";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -28,19 +29,21 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <header className="bg-slate-900 border-b border-slate-700 shadow-lg">
-          <div className="container mx-auto px-4 py-4 flex items-center justify-center">
-            <Image
-              src="/logo.png"
-              alt="START Inventory Logo"
-              width={200}
-              height={60}
-              priority
-              className="h-auto"
-            />
-          </div>
-        </header>
-        {children}
+        <ToastProvider>
+          <header className="bg-slate-900 border-b border-slate-700 shadow-lg">
+            <div className="container mx-auto px-4 py-4 flex items-center justify-center">
+              <Image
+                src="/logo.png"
+                alt="START Inventory Logo"
+                width={200}
+                height={60}
+                priority
+                className="h-auto"
+              />
+            </div>
+          </header>
+          {children}
+        </ToastProvider>
       </body>
     </html>
   );
