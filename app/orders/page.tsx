@@ -3,6 +3,9 @@ import { OrderHistoryClient } from '@/components/OrderHistoryClient';
 import { StatsDashboard } from '@/components/StatsDashboard';
 import Link from 'next/link';
 
+// Force dynamic rendering since this page requires database access
+export const dynamic = 'force-dynamic';
+
 export default async function OrderHistoryPage() {
     const [historyResult, statsResult] = await Promise.all([
         getOrderHistory(),

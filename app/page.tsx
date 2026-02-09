@@ -4,6 +4,9 @@ import { InventoryList } from '@/components/InventoryList';
 import { CartProvider } from '@/components/CartProvider';
 import { CartSummary } from '@/components/CartSummary';
 
+// Force dynamic rendering since this page requires database access
+export const dynamic = 'force-dynamic';
+
 export default async function Home() {
   // Fetch all items server-side
   const allItems = await db.select().from(items).orderBy(items.name);
