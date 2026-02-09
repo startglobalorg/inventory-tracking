@@ -2,8 +2,8 @@ export function StatsDashboard({ stats }: {
     stats: {
         totalConsumed: number;
         totalRestocked: number;
-        topItems: Array<{ itemName: string; itemCategory: string; totalConsumed: number }>;
-        categoryStats: Array<{ category: string; totalConsumed: number }>;
+        topItems: Array<{ itemName: string | null; itemCategory: string | null; totalConsumed: number }>;
+        categoryStats: Array<{ category: string | null; totalConsumed: number }>;
     }
 }) {
     return (
@@ -70,8 +70,8 @@ export function StatsDashboard({ stats }: {
                             stats.topItems.map((item, index) => (
                                 <div key={index} className="flex items-center justify-between">
                                     <div className="flex-1 min-w-0">
-                                        <p className="text-sm font-medium text-white truncate">{item.itemName}</p>
-                                        <p className="text-xs text-slate-500">{item.itemCategory}</p>
+                                        <p className="text-sm font-medium text-white truncate">{item.itemName || 'Unknown Item'}</p>
+                                        <p className="text-xs text-slate-500">{item.itemCategory || 'Uncategorized'}</p>
                                     </div>
                                     <div className="ml-4 flex items-center gap-2">
                                         <div className="text-right">
@@ -93,7 +93,7 @@ export function StatsDashboard({ stats }: {
                         ) : (
                             stats.categoryStats.map((cat, index) => (
                                 <div key={index} className="flex items-center justify-between">
-                                    <p className="text-sm font-medium text-white">{cat.category}</p>
+                                    <p className="text-sm font-medium text-white">{cat.category || 'Uncategorized'}</p>
                                     <div className="flex items-center gap-3">
                                         <div className="h-2 w-24 bg-slate-700 rounded-full overflow-hidden">
                                             <div

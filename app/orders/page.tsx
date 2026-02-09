@@ -9,24 +9,24 @@ export default async function OrderHistoryPage() {
         getOrderStatistics(),
     ]);
 
-    if (!historyResult.success) {
+    if (!historyResult.success || !historyResult.data) {
         return (
             <div className="min-h-screen bg-slate-950 p-8">
                 <div className="container mx-auto">
                     <div className="rounded-lg bg-red-900/20 border border-red-500 p-4 text-red-200">
-                        Error loading order history: {historyResult.error}
+                        Error loading order history: {historyResult.error || 'No data available'}
                     </div>
                 </div>
             </div>
         );
     }
 
-    if (!statsResult.success) {
+    if (!statsResult.success || !statsResult.data) {
         return (
             <div className="min-h-screen bg-slate-950 p-8">
                 <div className="container mx-auto">
                     <div className="rounded-lg bg-red-900/20 border border-red-500 p-4 text-red-200">
-                        Error loading statistics: {statsResult.error}
+                        Error loading statistics: {statsResult.error || 'No data available'}
                     </div>
                 </div>
             </div>
