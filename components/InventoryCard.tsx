@@ -8,6 +8,7 @@ import { useCart } from './CartProvider';
 export function InventoryCard({ item, mode = 'consume' }: { item: Item; mode?: 'consume' | 'restock' }) {
     const { addToCart, getItemChange } = useCart();
     const [customAmount, setCustomAmount] = useState('');
+    const [customUnits, setCustomUnits] = useState('');
 
     const currentChange = getItemChange(item.id);
     const optimisticStock = item.stock + currentChange;
@@ -84,14 +85,46 @@ export function InventoryCard({ item, mode = 'consume' }: { item: Item; mode?: '
                                 </button>
                             )}
 
-                            {/* Custom Amount Input */}
+                            {/* Custom Units Input */}
+                            {hasBatchOption && (
+                                <div className="flex gap-2">
+                                    <div className="flex-1 flex gap-1">
+                                        <input
+                                            type="number"
+                                            value={customUnits}
+                                            onChange={(e) => setCustomUnits(e.target.value)}
+                                            placeholder="Units"
+                                            className="flex-1 rounded-lg bg-slate-900 border border-slate-700 text-white px-2 sm:px-3 py-2 text-sm sm:text-base text-center focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                                            min="1"
+                                        />
+                                        <span className="flex items-center px-2 text-xs sm:text-sm text-slate-400 whitespace-nowrap">
+                                            {unitName}s
+                                        </span>
+                                    </div>
+                                    <button
+                                        onClick={() => {
+                                            const units = parseInt(customUnits);
+                                            if (units > 0) {
+                                                addToCart(item.id, -(units * batchSize));
+                                                setCustomUnits('');
+                                            }
+                                        }}
+                                        disabled={!customUnits || parseInt(customUnits) <= 0 || optimisticStock <= 0}
+                                        className="rounded-lg bg-red-600 px-4 sm:px-6 py-2 text-sm sm:text-base font-bold text-white transition-all hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50 active:scale-95"
+                                    >
+                                        Take
+                                    </button>
+                                </div>
+                            )}
+
+                            {/* Custom Amount Input (Individual Items) */}
                             <div className="flex gap-2">
                                 <input
                                     type="number"
                                     value={customAmount}
                                     onChange={(e) => setCustomAmount(e.target.value)}
-                                    placeholder="Custom"
-                                    className="flex-1 rounded-lg bg-slate-900 border border-slate-700 text-white px-2 sm:px-3 py-2 sm:py-3 text-sm sm:text-base text-center focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                                    placeholder="Custom items"
+                                    className="flex-1 rounded-lg bg-slate-900 border border-slate-700 text-white px-2 sm:px-3 py-2 text-sm text-center focus:ring-2 focus:ring-red-500 focus:border-transparent"
                                     min="1"
                                 />
                                 <button
@@ -103,7 +136,7 @@ export function InventoryCard({ item, mode = 'consume' }: { item: Item; mode?: '
                                         }
                                     }}
                                     disabled={!customAmount || parseInt(customAmount) <= 0 || optimisticStock <= 0}
-                                    className="rounded-lg bg-red-600 px-4 sm:px-6 py-2 sm:py-3 text-sm sm:text-base font-bold text-white transition-all hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50 active:scale-95"
+                                    className="rounded-lg bg-red-600 px-4 sm:px-6 py-2 text-sm font-bold text-white transition-all hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50 active:scale-95"
                                 >
                                     Take
                                 </button>
@@ -111,14 +144,46 @@ export function InventoryCard({ item, mode = 'consume' }: { item: Item; mode?: '
                         </>
                     ) : (
                         <>
-                            {/* Custom Amount Input for Restock */}
+                            {/* Custom Units Input for Restock */}
+                            {hasBatchOption && (
+                                <div className="flex gap-2">
+                                    <div className="flex-1 flex gap-1">
+                                        <input
+                                            type="number"
+                                            value={customUnits}
+                                            onChange={(e) => setCustomUnits(e.target.value)}
+                                            placeholder="Units"
+                                            className="flex-1 rounded-lg bg-slate-900 border border-slate-700 text-white px-2 sm:px-3 py-2 text-sm sm:text-base text-center focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                                            min="1"
+                                        />
+                                        <span className="flex items-center px-2 text-xs sm:text-sm text-slate-400 whitespace-nowrap">
+                                            {unitName}s
+                                        </span>
+                                    </div>
+                                    <button
+                                        onClick={() => {
+                                            const units = parseInt(customUnits);
+                                            if (units > 0) {
+                                                addToCart(item.id, units * batchSize);
+                                                setCustomUnits('');
+                                            }
+                                        }}
+                                        disabled={!customUnits || parseInt(customUnits) <= 0}
+                                        className="rounded-lg bg-green-600 px-4 sm:px-6 py-2 text-sm sm:text-base font-bold text-white transition-all hover:bg-green-700 disabled:cursor-not-allowed disabled:opacity-50 active:scale-95"
+                                    >
+                                        Add
+                                    </button>
+                                </div>
+                            )}
+
+                            {/* Custom Amount Input for Restock (Individual Items) */}
                             <div className="flex gap-2">
                                 <input
                                     type="number"
                                     value={customAmount}
                                     onChange={(e) => setCustomAmount(e.target.value)}
-                                    placeholder="Amount"
-                                    className="flex-1 rounded-lg bg-slate-900 border border-slate-700 text-white px-2 sm:px-3 py-2 sm:py-3 text-sm sm:text-base text-center focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                                    placeholder="Custom items"
+                                    className="flex-1 rounded-lg bg-slate-900 border border-slate-700 text-white px-2 sm:px-3 py-2 text-sm text-center focus:ring-2 focus:ring-green-500 focus:border-transparent"
                                     min="1"
                                 />
                                 <button
@@ -130,7 +195,7 @@ export function InventoryCard({ item, mode = 'consume' }: { item: Item; mode?: '
                                         }
                                     }}
                                     disabled={!customAmount || parseInt(customAmount) <= 0}
-                                    className="rounded-lg bg-green-600 px-4 sm:px-6 py-2 sm:py-3 text-sm sm:text-base font-bold text-white transition-all hover:bg-green-700 disabled:cursor-not-allowed disabled:opacity-50 active:scale-95"
+                                    className="rounded-lg bg-green-600 px-4 sm:px-6 py-2 text-sm font-bold text-white transition-all hover:bg-green-700 disabled:cursor-not-allowed disabled:opacity-50 active:scale-95"
                                 >
                                     Add
                                 </button>
