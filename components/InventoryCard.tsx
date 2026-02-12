@@ -88,16 +88,16 @@ export function InventoryCard({ item, mode = 'consume' }: { item: Item; mode?: '
                             {/* Custom Units Input */}
                             {hasBatchOption && (
                                 <div className="flex gap-2">
-                                    <div className="flex-1 flex gap-1">
+                                    <div className="flex-1 flex gap-1 min-w-0">
                                         <input
                                             type="number"
                                             value={customUnits}
                                             onChange={(e) => setCustomUnits(e.target.value)}
                                             placeholder="Units"
-                                            className="flex-1 rounded-lg bg-slate-900 border border-slate-700 text-white px-2 sm:px-3 py-2 text-sm sm:text-base text-center focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                                            className="flex-1 min-w-0 rounded-lg bg-slate-900 border border-slate-700 text-white px-2 sm:px-3 py-2 text-sm sm:text-base text-center focus:ring-2 focus:ring-red-500 focus:border-transparent"
                                             min="1"
                                         />
-                                        <span className="flex items-center px-2 text-xs sm:text-sm text-slate-400 whitespace-nowrap">
+                                        <span className="flex items-center px-1 sm:px-2 text-xs sm:text-sm text-slate-400 whitespace-nowrap">
                                             {unitName}s
                                         </span>
                                     </div>
@@ -110,7 +110,7 @@ export function InventoryCard({ item, mode = 'consume' }: { item: Item; mode?: '
                                             }
                                         }}
                                         disabled={!customUnits || parseInt(customUnits) <= 0 || optimisticStock <= 0}
-                                        className="rounded-lg bg-red-600 px-4 sm:px-6 py-2 text-sm sm:text-base font-bold text-white transition-all hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50 active:scale-95"
+                                        className="shrink-0 rounded-lg bg-red-600 px-3 sm:px-6 py-2 text-sm sm:text-base font-bold text-white transition-all hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50 active:scale-95"
                                     >
                                         Take
                                     </button>
@@ -124,7 +124,7 @@ export function InventoryCard({ item, mode = 'consume' }: { item: Item; mode?: '
                                     value={customAmount}
                                     onChange={(e) => setCustomAmount(e.target.value)}
                                     placeholder="Custom items"
-                                    className="flex-1 rounded-lg bg-slate-900 border border-slate-700 text-white px-2 sm:px-3 py-2 text-sm text-center focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                                    className="flex-1 min-w-0 rounded-lg bg-slate-900 border border-slate-700 text-white px-2 sm:px-3 py-2 text-sm text-center focus:ring-2 focus:ring-red-500 focus:border-transparent"
                                     min="1"
                                 />
                                 <button
@@ -136,7 +136,7 @@ export function InventoryCard({ item, mode = 'consume' }: { item: Item; mode?: '
                                         }
                                     }}
                                     disabled={!customAmount || parseInt(customAmount) <= 0 || optimisticStock <= 0}
-                                    className="rounded-lg bg-red-600 px-4 sm:px-6 py-2 text-sm font-bold text-white transition-all hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50 active:scale-95"
+                                    className="shrink-0 rounded-lg bg-red-600 px-3 sm:px-6 py-2 text-sm font-bold text-white transition-all hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50 active:scale-95"
                                 >
                                     Take
                                 </button>
@@ -147,16 +147,16 @@ export function InventoryCard({ item, mode = 'consume' }: { item: Item; mode?: '
                             {/* Custom Units Input for Restock */}
                             {hasBatchOption && (
                                 <div className="flex gap-2">
-                                    <div className="flex-1 flex gap-1">
+                                    <div className="flex-1 flex gap-1 min-w-0">
                                         <input
                                             type="number"
                                             value={customUnits}
                                             onChange={(e) => setCustomUnits(e.target.value)}
                                             placeholder="Units"
-                                            className="flex-1 rounded-lg bg-slate-900 border border-slate-700 text-white px-2 sm:px-3 py-2 text-sm sm:text-base text-center focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                                            className="flex-1 min-w-0 rounded-lg bg-slate-900 border border-slate-700 text-white px-2 sm:px-3 py-2 text-sm sm:text-base text-center focus:ring-2 focus:ring-green-500 focus:border-transparent"
                                             min="1"
                                         />
-                                        <span className="flex items-center px-2 text-xs sm:text-sm text-slate-400 whitespace-nowrap">
+                                        <span className="flex items-center px-1 sm:px-2 text-xs sm:text-sm text-slate-400 whitespace-nowrap">
                                             {unitName}s
                                         </span>
                                     </div>
@@ -169,7 +169,7 @@ export function InventoryCard({ item, mode = 'consume' }: { item: Item; mode?: '
                                             }
                                         }}
                                         disabled={!customUnits || parseInt(customUnits) <= 0}
-                                        className="rounded-lg bg-green-600 px-4 sm:px-6 py-2 text-sm sm:text-base font-bold text-white transition-all hover:bg-green-700 disabled:cursor-not-allowed disabled:opacity-50 active:scale-95"
+                                        className="shrink-0 rounded-lg bg-green-600 px-3 sm:px-6 py-2 text-sm sm:text-base font-bold text-white transition-all hover:bg-green-700 disabled:cursor-not-allowed disabled:opacity-50 active:scale-95"
                                     >
                                         Add
                                     </button>
@@ -183,7 +183,7 @@ export function InventoryCard({ item, mode = 'consume' }: { item: Item; mode?: '
                                     value={customAmount}
                                     onChange={(e) => setCustomAmount(e.target.value)}
                                     placeholder="Custom items"
-                                    className="flex-1 rounded-lg bg-slate-900 border border-slate-700 text-white px-2 sm:px-3 py-2 text-sm text-center focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                                    className="flex-1 min-w-0 rounded-lg bg-slate-900 border border-slate-700 text-white px-2 sm:px-3 py-2 text-sm text-center focus:ring-2 focus:ring-green-500 focus:border-transparent"
                                     min="1"
                                 />
                                 <button
@@ -195,7 +195,7 @@ export function InventoryCard({ item, mode = 'consume' }: { item: Item; mode?: '
                                         }
                                     }}
                                     disabled={!customAmount || parseInt(customAmount) <= 0}
-                                    className="rounded-lg bg-green-600 px-4 sm:px-6 py-2 text-sm font-bold text-white transition-all hover:bg-green-700 disabled:cursor-not-allowed disabled:opacity-50 active:scale-95"
+                                    className="shrink-0 rounded-lg bg-green-600 px-3 sm:px-6 py-2 text-sm font-bold text-white transition-all hover:bg-green-700 disabled:cursor-not-allowed disabled:opacity-50 active:scale-95"
                                 >
                                     Add
                                 </button>
