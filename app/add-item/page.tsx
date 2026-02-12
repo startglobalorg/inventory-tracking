@@ -72,14 +72,17 @@ export default function AddItemPage() {
 
     // Auto-generate SKU
     const generatedSKU = useMemo(() => {
-        if (!formData.category || !formData.brand || !formData.size) return '';
+        if (!formData.category || !formData.name) return '';
 
         const categoryCode = formData.category.toUpperCase().replace(/[^A-Z]/g, '').substring(0, 6);
-        const brandCode = formData.brand.toUpperCase().replace(/[^A-Z0-9]/g, '').substring(0, 8);
-        const sizeCode = formData.size.replace(/[^0-9]/g, '');
+        // Use full name to ensure uniqueness (e.g., "Rivella Red" vs "Rivella Blue")
+        const nameCode = formData.name.toUpperCase().replace(/[^A-Z0-9]/g, '').substring(0, 15);
+        const sizeCode = formData.size ? formData.size.replace(/[^0-9]/g, '') : '';
 
-        return `${categoryCode}-${brandCode}-${sizeCode}`;
-    }, [formData.category, formData.brand, formData.size]);
+        return sizeCode
+            ? `${categoryCode}-${nameCode}-${sizeCode}`
+            : `${categoryCode}-${nameCode}`;
+    }, [formData.category, formData.name, formData.size]);
 
     // Filter brands based on search
     const filteredBrands = useMemo(() => {
@@ -94,7 +97,7 @@ export default function AddItemPage() {
         setError('');
 
         if (!generatedSKU) {
-            setError('Please fill in category, brand, and size to generate SKU');
+            setError('Please fill in category and name to generate SKU');
             return;
         }
 
@@ -153,8 +156,9 @@ export default function AddItemPage() {
                                 value={formData.name}
                                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                                 className="w-full rounded-lg bg-slate-800 border border-slate-700 text-white px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                placeholder="e.g., Coca-Cola (500ml)"
+                                placeholder="e.g., Rivella Red (500ml)"
                             />
+                            <p className="mt-1 text-xs text-slate-500">Include variant/flavor for unique SKU (e.g., &quot;Red&quot; vs &quot;Blue&quot;)</p>
                         </div>
 
                         {/* Category */}
@@ -335,7 +339,17 @@ export default function AddItemPage() {
                             </div>
                             <div>
                                 <label htmlFor="minThreshold" className="block text-sm font-semibold text-white mb-2">
-                                    Min Threshold *
+                                    <span className="inline-flex items-center gap-2">
+                                        Min Threshold *
+                                        <span className="group relative">
+                                            <svg className="w-4 h-4 text-slate-400 cursor-help" fill="currentColor" viewBox="0 0 20 20">
+                                                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd" />
+                                            </svg>
+                                            <span className="invisible group-hover:visible absolute left-6 top-1/2 -translate-y-1/2 w-64 bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-xs font-normal text-slate-300 shadow-xl z-10">
+                                                When stock falls to or below this number, a Slack alert will be sent to notify the team about low stock.
+                                            </span>
+                                        </span>
+                                    </span>
                                 </label>
                                 <input
                                     type="number"

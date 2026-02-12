@@ -36,7 +36,51 @@ export const logs = sqliteTable('logs', {
         .default(sql`(unixepoch())`),
 });
 
+// Locations table - stores coffee points and other volunteer stations
+export const locations = sqliteTable('locations', {
+    id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+    name: text('name').notNull(),
+    slug: text('slug').notNull().unique(), // For QR codes, e.g., "coffee-point-1"
+    createdAt: integer('created_at', { mode: 'timestamp' })
+        .notNull()
+        .default(sql`(unixepoch())`),
+});
+
+// Orders table - volunteer requests for items
+export const orders = sqliteTable('orders', {
+    id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+    locationId: text('location_id')
+        .notNull()
+        .references(() => locations.id, { onDelete: 'cascade' }),
+    status: text('status', {
+        enum: ['new', 'in_progress', 'done']
+    }).notNull().default('new'),
+    createdAt: integer('created_at', { mode: 'timestamp' })
+        .notNull()
+        .default(sql`(unixepoch())`),
+    completedAt: integer('completed_at', { mode: 'timestamp' }),
+});
+
+// Order items table - line items for each order
+export const orderItems = sqliteTable('order_items', {
+    id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+    orderId: text('order_id')
+        .notNull()
+        .references(() => orders.id, { onDelete: 'cascade' }),
+    itemId: text('item_id')
+        .notNull()
+        .references(() => items.id, { onDelete: 'cascade' }),
+    quantity: integer('quantity').notNull(),
+});
+
+// Type exports
 export type Item = typeof items.$inferSelect;
 export type NewItem = typeof items.$inferInsert;
 export type Log = typeof logs.$inferSelect;
 export type NewLog = typeof logs.$inferInsert;
+export type Location = typeof locations.$inferSelect;
+export type NewLocation = typeof locations.$inferInsert;
+export type Order = typeof orders.$inferSelect;
+export type NewOrder = typeof orders.$inferInsert;
+export type OrderItem = typeof orderItems.$inferSelect;
+export type NewOrderItem = typeof orderItems.$inferInsert;

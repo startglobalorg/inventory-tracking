@@ -4,12 +4,13 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useCart } from './CartProvider';
 import { submitOrder } from '@/app/actions/order';
+import { updateOrderStatus } from '@/app/actions/volunteer-orders';
 import { useToast } from './ToastProvider';
 import type { Item } from '@/db/schema';
 
 export function CartSummary({ allItems }: { allItems: Item[] }) {
     const router = useRouter();
-    const { items, totalItems, clearCart } = useCart();
+    const { items, totalItems, clearCart, linkedOrderId } = useCart();
     const { showToast } = useToast();
     const [isOpen, setIsOpen] = useState(false);
     const [userName, setUserName] = useState('');
@@ -39,7 +40,13 @@ export function CartSummary({ allItems }: { allItems: Item[] }) {
             ]);
 
             if (result.success) {
-                showToast('Order submitted successfully!', 'success');
+                // If linked to a volunteer order, mark it as done
+                if (linkedOrderId) {
+                    await updateOrderStatus(linkedOrderId, 'done');
+                    showToast('Order fulfilled and stock updated!', 'success');
+                } else {
+                    showToast('Order submitted successfully!', 'success');
+                }
                 clearCart();
                 setIsOpen(false);
                 setUserName('');
@@ -75,15 +82,19 @@ export function CartSummary({ allItems }: { allItems: Item[] }) {
     return (
         <>
             {/* Floating Bar */}
-            <div className="fixed bottom-0 left-0 z-40 w-full bg-slate-800 border-t border-slate-700 p-3 sm:p-4 shadow-2xl safe-area-bottom">
+            <div className={`fixed bottom-0 left-0 z-40 w-full border-t p-3 sm:p-4 shadow-2xl safe-area-bottom ${linkedOrderId ? 'bg-purple-900 border-purple-700' : 'bg-slate-800 border-slate-700'}`}>
                 <div className="container mx-auto flex items-center justify-between gap-2 sm:gap-4">
                     <div className="flex items-center gap-2 sm:gap-3">
-                        <div className="flex h-9 w-9 sm:h-10 sm:w-10 items-center justify-center rounded-full bg-blue-600 font-bold text-white text-sm sm:text-base">
+                        <div className={`flex h-9 w-9 sm:h-10 sm:w-10 items-center justify-center rounded-full font-bold text-white text-sm sm:text-base ${linkedOrderId ? 'bg-purple-600' : 'bg-blue-600'}`}>
                             {totalItems}
                         </div>
                         <div className="text-white">
-                            <p className="font-semibold text-sm sm:text-base">Items in basket</p>
-                            <p className="text-xs text-slate-400 hidden sm:block">Review to confirm</p>
+                            <p className="font-semibold text-sm sm:text-base">
+                                {linkedOrderId ? 'Fulfilling Order' : 'Items in basket'}
+                            </p>
+                            <p className="text-xs text-slate-400 hidden sm:block">
+                                {linkedOrderId ? 'Adjust quantities if needed' : 'Review to confirm'}
+                            </p>
                         </div>
                     </div>
                     <button
@@ -101,7 +112,16 @@ export function CartSummary({ allItems }: { allItems: Item[] }) {
                     <div className="w-full max-w-md rounded-2xl bg-slate-900 border border-slate-700 shadow-2xl animate-slide-up max-h-[80vh] flex flex-col">
                         <div className="p-6 flex flex-col h-full">
                             <div className="flex items-center justify-between mb-4">
-                                <h2 className="text-xl font-bold text-white">Review Order</h2>
+                                <div>
+                                    <h2 className="text-xl font-bold text-white">
+                                        {linkedOrderId ? 'Fulfill Order' : 'Review Order'}
+                                    </h2>
+                                    {linkedOrderId && (
+                                        <p className="text-sm text-purple-400">
+                                            Linked to volunteer request
+                                        </p>
+                                    )}
+                                </div>
                                 <button
                                     onClick={() => setIsOpen(false)}
                                     className="text-slate-400 hover:text-white"
@@ -160,9 +180,9 @@ export function CartSummary({ allItems }: { allItems: Item[] }) {
                                     <button
                                         type="submit"
                                         disabled={isSubmitting}
-                                        className="flex-[2] rounded-lg bg-green-600 text-white font-bold py-3 hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                                        className={`flex-[2] rounded-lg text-white font-bold py-3 disabled:opacity-50 disabled:cursor-not-allowed ${linkedOrderId ? 'bg-purple-600 hover:bg-purple-700' : 'bg-green-600 hover:bg-green-700'}`}
                                     >
-                                        {isSubmitting ? 'Submitting...' : 'Confirm Order'}
+                                        {isSubmitting ? 'Submitting...' : linkedOrderId ? 'Fulfill Order' : 'Confirm Order'}
                                     </button>
                                 </div>
                             </form>

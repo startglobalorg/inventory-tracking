@@ -68,6 +68,12 @@ export function InventoryList({ initialItems, mode = 'consume' }: { initialItems
                                         Orders
                                     </Link>
                                     <Link
+                                        href="/history"
+                                        className="rounded-lg bg-slate-800 px-3 sm:px-4 py-2 text-xs sm:text-sm font-semibold text-slate-400 transition-hover border border-slate-700 hover:border-slate-500 hover:text-white"
+                                    >
+                                        History
+                                    </Link>
+                                    <Link
                                         href="/restock"
                                         className="rounded-lg bg-slate-800 px-3 sm:px-4 py-2 text-xs sm:text-sm font-semibold text-blue-400 transition-hover border border-slate-700 hover:border-blue-500 hover:text-blue-300"
                                     >

@@ -10,15 +10,19 @@ export interface CartItem {
 interface CartContextType {
     items: Record<string, number>; // itemId -> total change
     addToCart: (itemId: string, amount: number) => void;
+    setCartItems: (items: Record<string, number>) => void;
     clearCart: () => void;
     getItemChange: (itemId: string) => number;
     totalItems: number;
+    linkedOrderId: string | null;
+    setLinkedOrderId: (orderId: string | null) => void;
 }
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
 export function CartProvider({ children }: { children: ReactNode }) {
     const [items, setItems] = useState<Record<string, number>>({});
+    const [linkedOrderId, setLinkedOrderIdState] = useState<string | null>(null);
 
     const addToCart = useCallback((itemId: string, amount: number) => {
         setItems((prev) => {
@@ -37,8 +41,17 @@ export function CartProvider({ children }: { children: ReactNode }) {
         });
     }, []);
 
+    const setCartItems = useCallback((newItems: Record<string, number>) => {
+        setItems(newItems);
+    }, []);
+
     const clearCart = useCallback(() => {
         setItems({});
+        setLinkedOrderIdState(null);
+    }, []);
+
+    const setLinkedOrderId = useCallback((orderId: string | null) => {
+        setLinkedOrderIdState(orderId);
     }, []);
 
     const getItemChange = useCallback((itemId: string) => {
@@ -48,7 +61,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
     const totalItems = Object.keys(items).length;
 
     return (
-        <CartContext.Provider value={{ items, addToCart, clearCart, getItemChange, totalItems }}>
+        <CartContext.Provider value={{ items, addToCart, setCartItems, clearCart, getItemChange, totalItems, linkedOrderId, setLinkedOrderId }}>
             {children}
         </CartContext.Provider>
     );

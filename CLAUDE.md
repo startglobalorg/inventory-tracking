@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This is a Next.js 16 full-stack inventory management system for a coffee point (cafe/break room). It tracks stock levels with dual operating modes: **consumption tracking** (when items are taken) and **restocking** (when supplier deliveries arrive). All inventory changes are logged with full audit trails.
+This is a Next.js 16 full-stack inventory management system for coffee points (cafe/break rooms). It tracks stock levels with dual operating modes: **consumption tracking** (when items are taken) and **restocking** (when supplier deliveries arrive). All inventory changes are logged with full audit trails.
 
 ## Technology Stack
 
@@ -27,78 +27,276 @@ npm run db:studio        # Open Drizzle Studio (web UI for database)
 npm run db:seed          # Seed database with initial items (see db/seed.ts)
 ```
 
-**Docker deployment**: Multi-stage build with Alpine base, runs on port 3000 (recently changed to 3001 in some contexts - check Dockerfile and docker-compose.prod.yml).
+**Docker deployment**: Multi-stage build with Alpine base. Production runs on port 3001 (mapped from internal 3000). See `docker-compose.prod.yml`.
+
+---
+
+## Current Features (as of Feb 2026)
+
+### Core Functionality
+
+| Feature | Description | Files |
+|---------|-------------|-------|
+| **Consume Mode** | Track items taken from stock | `app/page.tsx` |
+| **Restock Mode** | Record supplier deliveries | `app/restock/page.tsx` |
+| **Order History** | View all past transactions with edit/delete | `app/orders/page.tsx` |
+| **Statistics Dashboard** | Consumption trends, top items, category breakdown | `components/StatsDashboard.tsx` |
+| **Item Management** | Full CRUD for inventory items | `app/item/[id]/page.tsx`, `app/add-item/page.tsx` |
+| **Low Stock Alerts** | Webhook notifications via n8n/Slack | `app/actions/webhook.ts` |
+
+### Ordering Options
+
+| Option | Description |
+|--------|-------------|
+| **Batch Button** | Quick "Take 24 (case)" for full units |
+| **Custom Units** | Enter number of cases/boxes to take |
+| **Custom Items** | Enter exact number of individual items |
+
+### Recent Additions
+
+- **Item Edit Page** (`/item/[id]`) - Edit all item properties, delete items
+- **Auto-generated SKU** - SKU created from category-name-size pattern (ensures uniqueness)
+- **Searchable Brand Dropdown** - 28 predefined brands + custom option
+- **Custom Unit Ordering** - Order by cases/boxes, not just individual items
+- **Delete Functionality** - Remove items with confirmation modal
+- **Mobile Optimization** - Responsive design, touch-friendly buttons
+
+### Volunteer Ordering System (START Summit x Hack 2026)
+
+| Feature | Description | Files |
+|---------|-------------|-------|
+| **Volunteer Request** | Public mobile form for volunteers to request items | `app/request/[slug]/page.tsx` |
+| **Location Order History** | View past orders for each coffee point | `app/request/[slug]/history/page.tsx` |
+| **Order Fulfillment** | Kanban/list view for inventory team | `app/orders/page.tsx` |
+| **Prepare Order** | Load volunteer request into cart for fulfillment | `components/CartInitializer.tsx` |
+| **Locations** | 12 Coffee Points + Accreditation seeded | `db/seed.ts` |
+
+**Workflow:**
+1. Volunteer scans QR code → `/request/coffee-point-1`
+2. Selects items needed (no stock numbers shown, can order by case/unit)
+3. Submits request → Order status: `new`
+4. Can view past orders → `/request/coffee-point-1/history`
+5. Inventory team sees order in `/orders`
+6. Clicks "Prepare Order" → Items loaded into cart on main page
+7. Adjusts quantities if needed, submits → Stock deducted, order marked `done`
+
+---
 
 ## Architecture Overview
 
-### Dual-Mode Operation
+### Page Structure
 
-The system has two distinct workflows:
+```
+app/
+├── page.tsx              # Consume mode (main inventory view)
+├── restock/page.tsx      # Restock mode (supplier deliveries)
+├── history/page.tsx      # Order history + statistics
+├── orders/page.tsx       # Volunteer order fulfillment dashboard
+├── add-item/page.tsx     # Create new items
+├── item/[id]/page.tsx    # Edit/delete individual items
+├── request/[slug]/
+│   ├── page.tsx          # Volunteer request form (public)
+│   └── history/page.tsx  # Location-specific order history
+├── actions.ts            # Item CRUD server actions
+└── actions/
+    ├── order.ts          # submitOrder (batch stock updates)
+    ├── history.ts        # Order history queries
+    ├── webhook.ts        # Low stock notifications
+    └── volunteer-orders.ts  # Volunteer order management
+```
 
-1. **Consume Mode** ([/app/page.tsx](app/page.tsx)): Main inventory view where users track items taken from stock
-   - Browse items, add to basket with custom quantities
-   - Submit consumption order (decrements stock)
+### Database Schema
 
-2. **Restock Mode** ([/app/restock/page.tsx](app/restock/page.tsx)): Supplier restocking interface
-   - Add quantities to restock order
-   - Submit restock order (increments stock)
+**File:** `db/schema.ts`
 
-Both modes use the same cart system ([components/CartProvider.tsx](components/CartProvider.tsx)) but with different semantics (negative deltas for consumption, positive for restocking).
+```typescript
+// items table
+{
+  id: text (UUID, primary key)
+  name: text
+  sku: text (unique)
+  stock: integer
+  minThreshold: integer
+  category: text
+  quantityPerUnit: integer (e.g., 24 for a case)
+  unitName: text (e.g., "case", "box")
+  createdAt: timestamp
+}
 
-### Data Layer
+// logs table (audit trail)
+{
+  id: text (UUID, primary key)
+  itemId: text (FK to items)
+  changeAmount: integer (positive or negative)
+  reason: enum ('consumed' | 'restocked' | 'adjustment')
+  userName: text
+  createdAt: timestamp
+}
 
-**Database Schema** ([db/schema.ts](db/schema.ts)):
+// locations table (volunteer stations)
+{
+  id: text (UUID, primary key)
+  name: text (e.g., "Coffee Point 1")
+  slug: text (unique, for QR codes)
+  createdAt: timestamp
+}
 
-- **items table**: Core inventory with `stock`, `minThreshold`, `category`, `quantityPerUnit`, `unitName` (for batch tracking)
-- **logs table**: Complete audit trail with `itemId`, `changeAmount`, `reason` (enum: consumed/restocked/adjustment), `userName`, timestamp
+// orders table (volunteer requests)
+{
+  id: text (UUID, primary key)
+  locationId: text (FK to locations)
+  status: enum ('new' | 'in_progress' | 'done')
+  createdAt: timestamp
+  completedAt: timestamp (nullable)
+}
 
-**Server Actions** ([app/actions.ts](app/actions.ts), [app/actions/order.ts](app/actions/order.ts)):
-- `updateStock()`: Single item updates
-- `submitOrder()`: Batch operations that atomically update multiple items and create log entries
+// order_items table (line items)
+{
+  id: text (UUID, primary key)
+  orderId: text (FK to orders)
+  itemId: text (FK to items)
+  quantity: integer
+}
+```
 
-### State Management Pattern
+### Server Actions
 
-**Cart System**: Client-side React Context that accumulates changes before submission
-- [components/CartProvider.tsx](components/CartProvider.tsx): Context provider with `cart` (Map of itemId → delta)
-- [components/CartSummary.tsx](components/CartSummary.tsx): Floating review panel with submit action
-- Optimistic UI updates before server confirmation
-- Toast notifications for feedback
+| Action | File | Purpose |
+|--------|------|---------|
+| `updateStock()` | `app/actions.ts` | Single item stock change |
+| `createItem()` | `app/actions.ts` | Add new item |
+| `updateItem()` | `app/actions.ts` | Edit item properties |
+| `deleteItem()` | `app/actions.ts` | Remove item + logs |
+| `submitOrder()` | `app/actions/order.ts` | Batch update multiple items |
+| `getOrderHistory()` | `app/actions/history.ts` | Fetch audit logs |
+| `getOrderStatistics()` | `app/actions/history.ts` | Consumption stats |
+| `editOrderLog()` | `app/actions/history.ts` | Modify log entry |
+| `deleteOrderLog()` | `app/actions/history.ts` | Remove log entry |
+| `notifyLowStock()` | `app/actions/webhook.ts` | Send webhook alert |
+| `getLocations()` | `app/actions/volunteer-orders.ts` | List all locations |
+| `getLocationBySlug()` | `app/actions/volunteer-orders.ts` | Get location by URL slug |
+| `getAvailableItems()` | `app/actions/volunteer-orders.ts` | Items with stock > 0 (no qty shown) |
+| `submitVolunteerRequest()` | `app/actions/volunteer-orders.ts` | Create new volunteer order |
+| `getOrders()` | `app/actions/volunteer-orders.ts` | Fetch orders with items |
+| `getOrdersByLocation()` | `app/actions/volunteer-orders.ts` | Fetch orders for specific location |
+| `updateOrderStatus()` | `app/actions/volunteer-orders.ts` | Change order status |
+| `getOrderForCart()` | `app/actions/volunteer-orders.ts` | Get order items for cart loading |
 
-**Search/Filtering**: Client-side filtering in [components/InventoryList.tsx](components/InventoryList.tsx)
-- Real-time search across name, SKU, category
-- Stats dashboard: total items, low stock alerts, category count
+### Component Architecture
 
-### Component Organization
+**Client Components** (`"use client"`):
+- `CartProvider.tsx` - Cart state context (itemId → quantity delta, linkedOrderId)
+- `CartSummary.tsx` - Floating review panel + submit form (handles order fulfillment)
+- `CartInitializer.tsx` - Reads URL params to pre-populate cart from volunteer orders
+- `InventoryCard.tsx` - Item card with ordering buttons
+- `InventoryList.tsx` - Grid view with search/filter
+- `EditItemForm.tsx` - Item edit form with delete
+- `OrderHistoryClient.tsx` - Log table with edit/delete
+- `StatsDashboard.tsx` - Statistics display
+- `ToastProvider.tsx` - Toast notifications
+- `VolunteerRequestForm.tsx` - Mobile form for volunteers (`app/request/[slug]/`)
+- `LocationOrderHistory.tsx` - Order history per location (`app/request/[slug]/history/`)
+- `FulfillmentDashboard.tsx` - Kanban/list view for orders (`app/orders/`)
 
-- **Server Components**: Data fetching pages ([app/page.tsx](app/page.tsx), [app/restock/page.tsx](app/restock/page.tsx))
-- **Client Components**: Interactive UI with `"use client"` directive
-  - [components/InventoryCard.tsx](components/InventoryCard.tsx): Item cards with increment/decrement
-  - [components/SearchBar.tsx](components/SearchBar.tsx): Search input
-  - Cart-related components (CartProvider, CartSummary)
+**Server Components**:
+- All page.tsx files fetch data and render client components
 
 ### Key Patterns
 
-**Server Actions** must be async functions marked with `"use server"` and can only return serializable data. They handle:
-- Database mutations via Drizzle ORM
-- Transaction management for multi-item updates
-- Creating audit log entries
+1. **Dynamic Rendering**: All database-dependent pages use `export const dynamic = 'force-dynamic'`
+2. **Optimistic UI**: Cart shows changes before server confirmation
+3. **Server Actions**: All mutations via `"use server"` functions
+4. **Audit Trail**: Every stock change creates a log entry
 
-**Item Management**: See [ADDING_ITEMS.md](ADDING_ITEMS.md) for:
-- Seeding database with items via [db/seed.ts](db/seed.ts)
-- SKU naming conventions (CATEGORY-BRAND-SIZE)
-- Recommended categories (Energy Drinks, Soft Drinks, Snacks, etc.)
-- Using Drizzle Studio web UI for manual item management
+---
 
-## Database Notes
+## Deployment
 
-- SQLite database file: `sqlite.db` (excluded from git)
-- Drizzle migrations: Push schema changes with `npm run db:push`
-- Schema changes require updating [db/schema.ts](db/schema.ts) then running `db:push`
-- Access database directly via `npm run db:studio` for inspection/manual edits
+### Docker (Production)
 
-## Recent Architecture Changes
+```bash
+# Build and deploy
+docker compose -f docker-compose.prod.yml down
+docker compose -f docker-compose.prod.yml build --no-cache
+docker compose -f docker-compose.prod.yml up -d
+```
 
-Recent commits show:
-- Removed authentication features (deleted `app/actions/auth.ts`, `app/login/page.tsx`, `middleware.ts`)
-- Simplified to single-user/team-accessible system without login requirements
-- Port configuration iterations for deployment (3000 → 3001 in some contexts)
+**Key files:**
+- `Dockerfile` - Multi-stage build with Alpine
+- `docker-compose.prod.yml` - Production config (port 3001)
+- `.dockerignore` - Excludes node_modules, .next, database files
+- `scripts/start.sh` - Container startup (handles permissions)
+- `scripts/init-db.js` - Database initialization
+
+### Environment Variables
+
+```env
+DATABASE_URL=/app/sqlite-data/sqlite.db
+NODE_ENV=production
+```
+
+---
+
+## Webhook Integration
+
+Low stock alerts are sent via webhook when an item drops to or below `minThreshold`:
+
+**Endpoint:** `https://n8n.startglobal.org/webhook/4576bef6-c2b0-4560-852e-93e9cf7d72ae`
+
+**Payload:**
+```json
+{
+  "event": "low_stock_alert",
+  "item": { "id", "name", "sku", "category", "stock", "minThreshold" },
+  "timestamp": "ISO date"
+}
+```
+
+See `WEBHOOK_INTEGRATION.md` for setup details.
+
+---
+
+## Current Limitations
+
+- No user authentication (volunteer requests are public by design)
+- No role-based access control (order fulfillment dashboard is open)
+- `userName` in logs is free text input
+
+## Future Enhancements
+
+Potential improvements:
+- PIN protection for order fulfillment dashboard
+- User authentication for inventory managers
+- QR code generation for location URLs
+- Push notifications for new orders
+- Order history and analytics
+
+---
+
+## File Reference
+
+### Core Files to Know
+
+| File | Purpose |
+|------|---------|
+| `db/schema.ts` | Database table definitions |
+| `app/actions.ts` | Item CRUD operations |
+| `app/actions/order.ts` | Order submission logic |
+| `app/actions/volunteer-orders.ts` | Volunteer order management |
+| `components/CartProvider.tsx` | Cart state management |
+| `components/CartInitializer.tsx` | URL param cart loading |
+| `components/InventoryCard.tsx` | Main item UI component |
+| `app/request/[slug]/VolunteerRequestForm.tsx` | Volunteer mobile form |
+| `app/orders/FulfillmentDashboard.tsx` | Order fulfillment UI |
+| `next.config.ts` | Next.js config (standalone output) |
+| `drizzle.config.ts` | Database connection config |
+
+### Documentation
+
+| File | Purpose |
+|------|---------|
+| `CLAUDE.md` | This file - project overview |
+| `README.md` | Quick start guide |
+| `ADDING_ITEMS.md` | How to add inventory items |
+| `HETZNER_DEPLOY.md` | Production deployment guide |
+| `WEBHOOK_INTEGRATION.md` | Slack notification setup |

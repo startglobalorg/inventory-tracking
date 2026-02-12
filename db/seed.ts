@@ -1,12 +1,15 @@
 import { db } from './db';
-import { items, logs } from './schema';
+import { items, logs, locations, orders, orderItems } from './schema';
 
 async function seed() {
     console.log('Clearing database...');
 
-    // Clear existing data
+    // Clear existing data (order matters due to foreign keys)
+    await db.delete(orderItems);
+    await db.delete(orders);
     await db.delete(logs);
     await db.delete(items);
+    await db.delete(locations);
 
     // Your coffee point items
     const seedItems = [
@@ -54,6 +57,22 @@ async function seed() {
 
     const insertedItems = await db.insert(items).values(seedItems).returning();
     console.log(`Inserted ${insertedItems.length} items`);
+
+    // Seed locations: 12 Coffee Points + 1 Accreditation
+    const seedLocations = [
+        ...Array.from({ length: 12 }, (_, i) => ({
+            name: `Coffee Point ${i + 1}`,
+            slug: `coffee-point-${i + 1}`,
+        })),
+        {
+            name: 'Accreditation',
+            slug: 'accreditation',
+        },
+    ];
+
+    const insertedLocations = await db.insert(locations).values(seedLocations).returning();
+    console.log(`Inserted ${insertedLocations.length} locations`);
+
     console.log('Seeding completed!');
 
     process.exit(0);
