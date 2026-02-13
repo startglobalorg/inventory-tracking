@@ -185,7 +185,7 @@ export function InventoryList({ initialItems, mode = 'consume' }: { initialItems
                         )}
                     </div>
                 ) : (
-                    <div className="grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                    <div className="grid gap-3 sm:gap-4" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 280px), 1fr))' }}>
                         {filteredItems.map((item) => (
                             <InventoryCard key={item.id} item={item} mode={mode} />
                         ))}

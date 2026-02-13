@@ -91,115 +91,128 @@ export async function getOrderStatistics() {
     }
 }
 
-export async function editOrderLog(logId: string, newAmount: number, reason: string) {
+export async function editOrderLog(logId: string, newAmount: number, _reason: string) {
     try {
-        // Get the original log
-        const originalLog = await db.select().from(logs).where(eq(logs.id, logId)).limit(1);
+        // Note: better-sqlite3 transactions must be synchronous (no async/await)
+        const result = db.transaction((tx) => {
+            // Get the original log
+            const originalLog = tx.select().from(logs).where(eq(logs.id, logId)).limit(1).all();
 
-        if (originalLog.length === 0) {
-            return { success: false, error: 'Log not found' };
-        }
+            if (originalLog.length === 0) {
+                throw new Error('Log not found');
+            }
 
-        const log = originalLog[0];
-        const difference = newAmount - log.changeAmount;
+            const log = originalLog[0];
+            const difference = newAmount - log.changeAmount;
 
-        // If no change, just return success
-        if (difference === 0) {
+            // If no change, just return
+            if (difference === 0) {
+                return { noChange: true };
+            }
+
+            // Atomic stock update with negative-stock guard
+            const updated = tx
+                .update(items)
+                .set({ stock: sql`${items.stock} + ${difference}` })
+                .where(
+                    sql`${items.id} = ${log.itemId} AND ${items.stock} + ${difference} >= 0`
+                )
+                .returning({ stock: items.stock })
+                .all();
+
+            if (!updated || updated.length === 0) {
+                // Check if item exists
+                const item = tx.select().from(items).where(eq(items.id, log.itemId)).limit(1).all();
+                if (!item || item.length === 0) {
+                    throw new Error('Item not found');
+                }
+                throw new Error('Adjustment would result in negative stock');
+            }
+
+            // Update the log
+            tx
+                .update(logs)
+                .set({ changeAmount: newAmount })
+                .where(eq(logs.id, logId))
+                .run();
+
+            // Create an adjustment log to track the edit
+            tx.insert(logs).values({
+                itemId: log.itemId,
+                changeAmount: difference,
+                reason: 'adjustment',
+                userName: `System (Edit of log ${logId.substring(0, 8)})`,
+            }).run();
+
+            return { noChange: false };
+        });
+
+        if (result.noChange) {
             return { success: true };
         }
 
-        // Update the item stock to reflect the adjustment
-        const item = await db.select().from(items).where(eq(items.id, log.itemId)).limit(1);
-
-        if (item.length === 0) {
-            return { success: false, error: 'Item not found' };
-        }
-
-        const currentStock = item[0].stock;
-        const newStock = currentStock + difference;
-
-        if (newStock < 0) {
-            return { success: false, error: 'Adjustment would result in negative stock' };
-        }
-
-        // Update the log
-        await db
-            .update(logs)
-            .set({ changeAmount: newAmount })
-            .where(eq(logs.id, logId));
-
-        // Update the item stock
-        await db
-            .update(items)
-            .set({ stock: newStock })
-            .where(eq(items.id, log.itemId));
-
-        // Create an adjustment log to track the edit
-        await db.insert(logs).values({
-            itemId: log.itemId,
-            changeAmount: difference,
-            reason: 'adjustment',
-            userName: `System (Edit of log ${logId.substring(0, 8)})`,
-        });
-
         revalidatePath('/');
         revalidatePath('/orders');
+        revalidatePath('/history');
 
         return { success: true };
     } catch (error) {
         console.error('Error editing order log:', error);
-        return { success: false, error: 'Failed to edit order log' };
+        return { success: false, error: error instanceof Error ? error.message : 'Failed to edit order log' };
     }
 }
 
 export async function deleteOrderLog(logId: string) {
     try {
-        // Get the log to reverse its effect
-        const originalLog = await db.select().from(logs).where(eq(logs.id, logId)).limit(1);
+        // Note: better-sqlite3 transactions must be synchronous (no async/await)
+        db.transaction((tx) => {
+            // Get the log to reverse its effect
+            const originalLog = tx.select().from(logs).where(eq(logs.id, logId)).limit(1).all();
 
-        if (originalLog.length === 0) {
-            return { success: false, error: 'Log not found' };
-        }
+            if (originalLog.length === 0) {
+                throw new Error('Log not found');
+            }
 
-        const log = originalLog[0];
+            const log = originalLog[0];
 
-        // Reverse the stock change
-        const item = await db.select().from(items).where(eq(items.id, log.itemId)).limit(1);
+            // Atomic stock reversal with negative-stock guard
+            const updated = tx
+                .update(items)
+                .set({ stock: sql`${items.stock} - ${log.changeAmount}` })
+                .where(
+                    sql`${items.id} = ${log.itemId} AND ${items.stock} - ${log.changeAmount} >= 0`
+                )
+                .returning({ stock: items.stock })
+                .all();
 
-        if (item.length === 0) {
-            return { success: false, error: 'Item not found' };
-        }
+            if (!updated || updated.length === 0) {
+                // Check if item exists
+                const item = tx.select().from(items).where(eq(items.id, log.itemId)).limit(1).all();
+                if (!item || item.length === 0) {
+                    throw new Error('Item not found');
+                }
+                throw new Error('Deleting this log would result in negative stock');
+            }
 
-        const currentStock = item[0].stock;
-        const newStock = currentStock - log.changeAmount;
+            // Delete the log
+            tx.delete(logs).where(eq(logs.id, logId)).run();
 
-        if (newStock < 0) {
-            return { success: false, error: 'Deleting this log would result in negative stock' };
-        }
-
-        // Update the item stock
-        await db
-            .update(items)
-            .set({ stock: newStock })
-            .where(eq(items.id, log.itemId));
-
-        // Delete the log
-        await db.delete(logs).where(eq(logs.id, logId));
-
-        // Create an adjustment log to track the deletion
-        await db.insert(logs).values({
-            itemId: log.itemId,
-            changeAmount: -log.changeAmount,
-            reason: 'adjustment',
-            userName: `System (Deleted log ${logId.substring(0, 8)})`,
+            // Create an adjustment log to track the deletion
+            tx.insert(logs).values({
+                itemId: log.itemId,
+                changeAmount: -log.changeAmount,
+                reason: 'adjustment',
+                userName: `System (Deleted log ${logId.substring(0, 8)})`,
+            }).run();
         });
 
         revalidatePath('/');
         revalidatePath('/orders');
+        revalidatePath('/history');
 
         return { success: true };
     } catch (error) {
         console.error('Error deleting order log:', error);
-        return { success: false, error: 'Failed to delete order log' };
+        return { success: false, error: error instanceof Error ? error.message : 'Failed to delete order log' };
     }
 }

@@ -141,7 +141,7 @@ export function EditItemForm({ item }: { item: Item }) {
                                 required
                                 min="0"
                                 value={formData.stock}
-                                onChange={(e) => setFormData({ ...formData, stock: parseInt(e.target.value) })}
+                                onChange={(e) => setFormData({ ...formData, stock: parseInt(e.target.value, 10) })}
                                 className="w-full rounded-lg border border-slate-600 bg-slate-800 px-4 py-2.5 text-white placeholder-slate-500 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
                             />
                         </div>
@@ -156,7 +156,7 @@ export function EditItemForm({ item }: { item: Item }) {
                                 required
                                 min="0"
                                 value={formData.minThreshold}
-                                onChange={(e) => setFormData({ ...formData, minThreshold: parseInt(e.target.value) })}
+                                onChange={(e) => setFormData({ ...formData, minThreshold: parseInt(e.target.value, 10) })}
                                 className="w-full rounded-lg border border-slate-600 bg-slate-800 px-4 py-2.5 text-white placeholder-slate-500 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
                             />
                         </div>
@@ -174,7 +174,7 @@ export function EditItemForm({ item }: { item: Item }) {
                                 required
                                 min="1"
                                 value={formData.quantityPerUnit}
-                                onChange={(e) => setFormData({ ...formData, quantityPerUnit: parseInt(e.target.value) })}
+                                onChange={(e) => setFormData({ ...formData, quantityPerUnit: parseInt(e.target.value, 10) })}
                                 className="w-full rounded-lg border border-slate-600 bg-slate-800 px-4 py-2.5 text-white placeholder-slate-500 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
                             />
                             <p className="mt-1 text-xs text-slate-500">Items per case/box</p>

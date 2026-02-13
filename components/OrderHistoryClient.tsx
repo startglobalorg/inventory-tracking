@@ -30,7 +30,7 @@ export function OrderHistoryClient({ logs }: { logs: OrderLog[] }) {
     const handleSave = async (logId: string, originalAmount: number, reason: string) => {
         setIsSubmitting(true);
 
-        const newAmount = parseInt(editAmount);
+        const newAmount = parseInt(editAmount, 10);
         if (isNaN(newAmount) || newAmount <= 0) {
             showToast('Please enter a valid amount', 'error');
             setIsSubmitting(false);

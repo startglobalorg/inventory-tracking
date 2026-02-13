@@ -2,7 +2,7 @@
 
 import { db } from '@/db/db';
 import { locations, orders, orderItems, items } from '@/db/schema';
-import { eq, asc, desc } from 'drizzle-orm';
+import { eq, asc, desc, gt, inArray } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
 
 // Types
@@ -84,8 +84,8 @@ export async function createLocation(name: string, slug: string) {
 
 export async function getAvailableItems() {
     try {
-        // Get items with stock > 0 but don't expose exact stock numbers
-        const availableItems = await db
+        // Single query: get items with stock > 0, excluding exact stock numbers
+        const inStockItems = await db
             .select({
                 id: items.id,
                 name: items.name,
@@ -95,15 +95,8 @@ export async function getAvailableItems() {
                 unitName: items.unitName,
             })
             .from(items)
-            .where(eq(items.stock, items.stock)) // Placeholder - we filter in JS
+            .where(gt(items.stock, 0))
             .orderBy(asc(items.category), asc(items.name));
-
-        // Filter to only items with stock > 0
-        const allItems = await db.select().from(items);
-        const inStockItems = availableItems.filter(item => {
-            const fullItem = allItems.find(i => i.id === item.id);
-            return fullItem && fullItem.stock > 0;
-        });
 
         return { success: true, data: inStockItems };
     } catch (error) {
@@ -119,17 +112,6 @@ export async function submitVolunteerRequest(
     requestedItems: Record<string, number> // itemId -> quantity
 ) {
     try {
-        // Validate location exists
-        const location = await db
-            .select()
-            .from(locations)
-            .where(eq(locations.id, locationId))
-            .limit(1);
-
-        if (location.length === 0) {
-            return { success: false, error: 'Location not found' };
-        }
-
         // Filter out zero quantities
         const validItems = Object.entries(requestedItems).filter(
             ([, qty]) => qty > 0
@@ -139,92 +121,127 @@ export async function submitVolunteerRequest(
             return { success: false, error: 'No items selected' };
         }
 
-        // Create order
-        const newOrder = await db
-            .insert(orders)
-            .values({
-                locationId,
-                status: 'new',
-            })
-            .returning();
-
-        const orderId = newOrder[0].id;
-
-        // Create order items
-        for (const [itemId, quantity] of validItems) {
-            // Verify item exists
-            const item = await db
+        // Note: better-sqlite3 transactions must be synchronous (no async/await)
+        const orderId = db.transaction((tx) => {
+            // Validate location exists
+            const location = tx
                 .select()
-                .from(items)
-                .where(eq(items.id, itemId))
-                .limit(1);
+                .from(locations)
+                .where(eq(locations.id, locationId))
+                .limit(1)
+                .all();
 
-            if (item.length > 0) {
-                await db.insert(orderItems).values({
-                    orderId,
+            if (!location || location.length === 0) {
+                throw new Error('Location not found');
+            }
+
+            // Validate all items exist before creating the order
+            const itemIds = validItems.map(([id]) => id);
+            const existingItems = tx
+                .select({ id: items.id })
+                .from(items)
+                .where(inArray(items.id, itemIds))
+                .all();
+
+            if (!existingItems) {
+                throw new Error('Failed to validate items');
+            }
+
+            const existingIds = new Set(existingItems.map(i => i.id));
+            const missingIds = itemIds.filter(id => !existingIds.has(id));
+
+            if (missingIds.length > 0) {
+                throw new Error('Some requested items no longer exist');
+            }
+
+            // Create order
+            const newOrder = tx
+                .insert(orders)
+                .values({
+                    locationId,
+                    status: 'new',
+                })
+                .returning()
+                .all();
+
+            if (!newOrder || newOrder.length === 0) {
+                throw new Error('Failed to create order');
+            }
+
+            const newOrderId = newOrder[0].id;
+
+            // Create order items
+            for (const [itemId, quantity] of validItems) {
+                tx.insert(orderItems).values({
+                    orderId: newOrderId,
                     itemId,
                     quantity,
-                });
+                }).run();
             }
-        }
+
+            return newOrderId;
+        });
 
         revalidatePath('/orders');
         return { success: true, orderId };
     } catch (error) {
         console.error('Error submitting volunteer request:', error);
-        return { success: false, error: 'Failed to submit request' };
+        return { success: false, error: error instanceof Error ? error.message : 'Failed to submit request' };
     }
 }
 
 export async function getOrders(statusFilter?: OrderStatus | 'all') {
     try {
-        // Get all orders with location info
+        // Fetch orders with location names via JOIN
         const allOrders = await db
             .select({
                 id: orders.id,
                 locationId: orders.locationId,
+                locationName: locations.name,
                 status: orders.status,
                 createdAt: orders.createdAt,
                 completedAt: orders.completedAt,
             })
             .from(orders)
+            .leftJoin(locations, eq(orders.locationId, locations.id))
             .orderBy(asc(orders.createdAt));
 
-        // Get location names
-        const allLocations = await db.select().from(locations);
-        const locationMap = new Map(allLocations.map(l => [l.id, l.name]));
-
-        // Get all order items with item names
+        // Fetch order items with item names via JOIN
         const allOrderItems = await db
             .select({
                 id: orderItems.id,
                 orderId: orderItems.orderId,
                 itemId: orderItems.itemId,
+                itemName: items.name,
                 quantity: orderItems.quantity,
             })
-            .from(orderItems);
+            .from(orderItems)
+            .leftJoin(items, eq(orderItems.itemId, items.id));
 
-        const allItems = await db.select().from(items);
-        const itemMap = new Map(allItems.map(i => [i.id, i.name]));
+        // Group order items by orderId for efficient lookup
+        const orderItemsByOrderId = new Map<string, typeof allOrderItems>();
+        for (const oi of allOrderItems) {
+            const existing = orderItemsByOrderId.get(oi.orderId) || [];
+            existing.push(oi);
+            orderItemsByOrderId.set(oi.orderId, existing);
+        }
 
-        // Build response
+        // Build response with filtering
         const ordersWithDetails: OrderWithDetails[] = allOrders
             .filter(order => statusFilter === 'all' || !statusFilter || order.status === statusFilter)
             .map(order => ({
                 id: order.id,
                 locationId: order.locationId,
-                locationName: locationMap.get(order.locationId) || 'Unknown',
+                locationName: order.locationName || 'Unknown',
                 status: order.status as OrderStatus,
                 createdAt: order.createdAt,
                 completedAt: order.completedAt,
-                items: allOrderItems
-                    .filter(oi => oi.orderId === order.id)
-                    .map(oi => ({
-                        id: oi.id,
-                        itemId: oi.itemId,
-                        itemName: itemMap.get(oi.itemId) || 'Unknown Item',
-                        quantity: oi.quantity,
-                    })),
+                items: (orderItemsByOrderId.get(order.id) || []).map(oi => ({
+                    id: oi.id,
+                    itemId: oi.itemId,
+                    itemName: oi.itemName || 'Unknown Item',
+                    quantity: oi.quantity,
+                })),
             }));
 
         return { success: true, data: ordersWithDetails };
@@ -236,6 +253,15 @@ export async function getOrders(statusFilter?: OrderStatus | 'all') {
 
 export async function getOrdersByLocation(locationId: string) {
     try {
+        // Get location name
+        const location = await db
+            .select()
+            .from(locations)
+            .where(eq(locations.id, locationId))
+            .limit(1);
+
+        const locationName = location[0]?.name || 'Unknown';
+
         // Get all orders for this location
         const locationOrders = await db
             .select({
@@ -249,27 +275,31 @@ export async function getOrdersByLocation(locationId: string) {
             .where(eq(orders.locationId, locationId))
             .orderBy(desc(orders.createdAt));
 
-        // Get location name
-        const location = await db
-            .select()
-            .from(locations)
-            .where(eq(locations.id, locationId))
-            .limit(1);
+        if (locationOrders.length === 0) {
+            return { success: true, data: [] };
+        }
 
-        const locationName = location[0]?.name || 'Unknown';
-
-        // Get all order items for these orders
-        const allOrderItems = await db
+        // Get order items for these specific orders via JOIN
+        const orderIds = locationOrders.map(o => o.id);
+        const relevantOrderItems = await db
             .select({
                 id: orderItems.id,
                 orderId: orderItems.orderId,
                 itemId: orderItems.itemId,
+                itemName: items.name,
                 quantity: orderItems.quantity,
             })
-            .from(orderItems);
+            .from(orderItems)
+            .leftJoin(items, eq(orderItems.itemId, items.id))
+            .where(inArray(orderItems.orderId, orderIds));
 
-        const allItems = await db.select().from(items);
-        const itemMap = new Map(allItems.map(i => [i.id, i.name]));
+        // Group order items by orderId
+        const orderItemsByOrderId = new Map<string, typeof relevantOrderItems>();
+        for (const oi of relevantOrderItems) {
+            const existing = orderItemsByOrderId.get(oi.orderId) || [];
+            existing.push(oi);
+            orderItemsByOrderId.set(oi.orderId, existing);
+        }
 
         // Build response
         const ordersWithDetails: OrderWithDetails[] = locationOrders.map(order => ({
@@ -279,14 +309,12 @@ export async function getOrdersByLocation(locationId: string) {
             status: order.status as OrderStatus,
             createdAt: order.createdAt,
             completedAt: order.completedAt,
-            items: allOrderItems
-                .filter(oi => oi.orderId === order.id)
-                .map(oi => ({
-                    id: oi.id,
-                    itemId: oi.itemId,
-                    itemName: itemMap.get(oi.itemId) || 'Unknown Item',
-                    quantity: oi.quantity,
-                })),
+            items: (orderItemsByOrderId.get(order.id) || []).map(oi => ({
+                id: oi.id,
+                itemId: oi.itemId,
+                itemName: oi.itemName || 'Unknown Item',
+                quantity: oi.quantity,
+            })),
         }));
 
         return { success: true, data: ordersWithDetails };
@@ -298,44 +326,50 @@ export async function getOrdersByLocation(locationId: string) {
 
 export async function getOrderById(orderId: string) {
     try {
-        const order = await db
-            .select()
+        // Get order with location via JOIN
+        const orderResult = await db
+            .select({
+                id: orders.id,
+                locationId: orders.locationId,
+                locationName: locations.name,
+                status: orders.status,
+                createdAt: orders.createdAt,
+                completedAt: orders.completedAt,
+            })
             .from(orders)
+            .leftJoin(locations, eq(orders.locationId, locations.id))
             .where(eq(orders.id, orderId))
             .limit(1);
 
-        if (order.length === 0) {
+        if (orderResult.length === 0) {
             return { success: false, error: 'Order not found' };
         }
 
-        // Get location name
-        const location = await db
-            .select()
-            .from(locations)
-            .where(eq(locations.id, order[0].locationId))
-            .limit(1);
+        const order = orderResult[0];
 
-        // Get order items
+        // Get order items with item names via JOIN
         const orderItemsList = await db
-            .select()
+            .select({
+                id: orderItems.id,
+                itemId: orderItems.itemId,
+                itemName: items.name,
+                quantity: orderItems.quantity,
+            })
             .from(orderItems)
+            .leftJoin(items, eq(orderItems.itemId, items.id))
             .where(eq(orderItems.orderId, orderId));
 
-        // Get item details
-        const itemDetails = await db.select().from(items);
-        const itemMap = new Map(itemDetails.map(i => [i.id, i]));
-
         const orderWithDetails: OrderWithDetails = {
-            id: order[0].id,
-            locationId: order[0].locationId,
-            locationName: location[0]?.name || 'Unknown',
-            status: order[0].status as OrderStatus,
-            createdAt: order[0].createdAt,
-            completedAt: order[0].completedAt,
+            id: order.id,
+            locationId: order.locationId,
+            locationName: order.locationName || 'Unknown',
+            status: order.status as OrderStatus,
+            createdAt: order.createdAt,
+            completedAt: order.completedAt,
             items: orderItemsList.map(oi => ({
                 id: oi.id,
                 itemId: oi.itemId,
-                itemName: itemMap.get(oi.itemId)?.name || 'Unknown Item',
+                itemName: oi.itemName || 'Unknown Item',
                 quantity: oi.quantity,
             })),
         };

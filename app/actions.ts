@@ -2,49 +2,50 @@
 
 import { db } from '@/db/db';
 import { items, logs } from '@/db/schema';
-import { eq } from 'drizzle-orm';
+import { eq, sql } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
 
 export async function updateStock(
     itemId: string,
     changeAmount: number,
-    reason: 'consumed' | 'restocked' | 'adjustment'
+    reason: 'consumed' | 'restocked' | 'adjustment',
+    userName?: string
 ) {
     try {
-        // Get current item
-        const item = await db.select().from(items).where(eq(items.id, itemId)).limit(1);
+        // Atomic stock update with negative-stock guard
+        const result = await db
+            .update(items)
+            .set({ stock: sql`${items.stock} + ${changeAmount}` })
+            .where(
+                changeAmount < 0
+                    ? sql`${items.id} = ${itemId} AND ${items.stock} + ${changeAmount} >= 0`
+                    : eq(items.id, itemId)
+            )
+            .returning({ id: items.id, stock: items.stock, name: items.name });
 
-        if (item.length === 0) {
-            return { success: false, error: 'Item not found' };
-        }
-
-        const currentItem = item[0];
-        const newStock = currentItem.stock + changeAmount;
-
-        // Prevent negative stock
-        if (newStock < 0) {
+        if (result.length === 0) {
+            // Distinguish between "item not found" and "insufficient stock"
+            const item = await db.select().from(items).where(eq(items.id, itemId)).limit(1);
+            if (item.length === 0) {
+                return { success: false, error: 'Item not found' };
+            }
             return { success: false, error: 'Cannot have negative stock' };
         }
-
-        // Update stock
-        await db
-            .update(items)
-            .set({ stock: newStock })
-            .where(eq(items.id, itemId));
 
         // Log the change
         await db.insert(logs).values({
             itemId,
             changeAmount,
             reason,
+            userName: userName || undefined,
         });
 
         revalidatePath('/');
 
         return {
             success: true,
-            newStock,
-            itemName: currentItem.name
+            newStock: result[0].stock,
+            itemName: result[0].name
         };
     } catch (error) {
         console.error('Error updating stock:', error);
@@ -62,22 +63,30 @@ export async function createItem(formData: {
     unitName: string;
 }) {
     try {
-        // Check if SKU already exists
-        const existing = await db.select().from(items).where(eq(items.sku, formData.sku)).limit(1);
-
-        if (existing.length > 0) {
-            return { success: false, error: 'SKU already exists' };
+        // Validate numeric fields
+        if (formData.stock < 0) {
+            return { success: false, error: 'Stock cannot be negative' };
+        }
+        if (formData.minThreshold < 0) {
+            return { success: false, error: 'Minimum threshold cannot be negative' };
+        }
+        if (formData.quantityPerUnit < 1) {
+            return { success: false, error: 'Quantity per unit must be at least 1' };
         }
 
-        // Insert new item
+        // Insert and rely on unique constraint for SKU conflicts
         await db.insert(items).values(formData);
 
         revalidatePath('/');
         revalidatePath('/restock');
 
         return { success: true };
-    } catch (error) {
+    } catch (error: unknown) {
         console.error('Error creating item:', error);
+        // Handle unique constraint violation
+        if (error instanceof Error && error.message.includes('UNIQUE constraint failed')) {
+            return { success: false, error: 'SKU already exists' };
+        }
         return { success: false, error: 'Failed to create item' };
     }
 }
@@ -92,6 +101,17 @@ export async function updateItem(itemId: string, formData: {
     unitName: string;
 }) {
     try {
+        // Validate numeric fields
+        if (formData.stock < 0) {
+            return { success: false, error: 'Stock cannot be negative' };
+        }
+        if (formData.minThreshold < 0) {
+            return { success: false, error: 'Minimum threshold cannot be negative' };
+        }
+        if (formData.quantityPerUnit < 1) {
+            return { success: false, error: 'Quantity per unit must be at least 1' };
+        }
+
         // Check if item exists
         const existing = await db.select().from(items).where(eq(items.id, itemId)).limit(1);
 
@@ -99,15 +119,7 @@ export async function updateItem(itemId: string, formData: {
             return { success: false, error: 'Item not found' };
         }
 
-        // Check if SKU is being changed and if it conflicts with another item
-        if (existing[0].sku !== formData.sku) {
-            const skuExists = await db.select().from(items).where(eq(items.sku, formData.sku)).limit(1);
-            if (skuExists.length > 0) {
-                return { success: false, error: 'SKU already exists' };
-            }
-        }
-
-        // Update item
+        // Update item — rely on unique constraint for SKU conflicts
         await db.update(items).set(formData).where(eq(items.id, itemId));
 
         revalidatePath('/');
@@ -115,8 +127,11 @@ export async function updateItem(itemId: string, formData: {
         revalidatePath(`/item/${itemId}`);
 
         return { success: true };
-    } catch (error) {
+    } catch (error: unknown) {
         console.error('Error updating item:', error);
+        if (error instanceof Error && error.message.includes('UNIQUE constraint failed')) {
+            return { success: false, error: 'SKU already exists' };
+        }
         return { success: false, error: 'Failed to update item' };
     }
 }
@@ -130,10 +145,7 @@ export async function deleteItem(itemId: string) {
             return { success: false, error: 'Item not found' };
         }
 
-        // Delete associated logs first (foreign key constraint)
-        await db.delete(logs).where(eq(logs.itemId, itemId));
-
-        // Delete the item
+        // Delete the item (cascade handles associated logs)
         await db.delete(items).where(eq(items.id, itemId));
 
         revalidatePath('/');

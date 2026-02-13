@@ -1,4 +1,4 @@
-import { sqliteTable, text, integer } from 'drizzle-orm/sqlite-core';
+import { sqliteTable, text, integer, index } from 'drizzle-orm/sqlite-core';
 import { sql } from 'drizzle-orm';
 
 // Items table - stores inventory items
@@ -34,7 +34,9 @@ export const logs = sqliteTable('logs', {
     createdAt: integer('created_at', { mode: 'timestamp' })
         .notNull()
         .default(sql`(unixepoch())`),
-});
+}, (table) => [
+    index('logs_item_id_idx').on(table.itemId),
+]);
 
 // Locations table - stores coffee points and other volunteer stations
 export const locations = sqliteTable('locations', {
@@ -59,7 +61,9 @@ export const orders = sqliteTable('orders', {
         .notNull()
         .default(sql`(unixepoch())`),
     completedAt: integer('completed_at', { mode: 'timestamp' }),
-});
+}, (table) => [
+    index('orders_location_id_idx').on(table.locationId),
+]);
 
 // Order items table - line items for each order
 export const orderItems = sqliteTable('order_items', {
@@ -71,7 +75,10 @@ export const orderItems = sqliteTable('order_items', {
         .notNull()
         .references(() => items.id, { onDelete: 'cascade' }),
     quantity: integer('quantity').notNull(),
-});
+}, (table) => [
+    index('order_items_order_id_idx').on(table.orderId),
+    index('order_items_item_id_idx').on(table.itemId),
+]);
 
 // Type exports
 export type Item = typeof items.$inferSelect;

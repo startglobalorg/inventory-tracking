@@ -3,4 +3,6 @@ import Database from 'better-sqlite3';
 import * as schema from './schema';
 
 const sqlite = new Database(process.env.DATABASE_URL || 'sqlite.db');
+sqlite.pragma('journal_mode = WAL');
+sqlite.pragma('busy_timeout = 5000');
 export const db = drizzle(sqlite, { schema });

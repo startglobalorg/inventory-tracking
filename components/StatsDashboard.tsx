@@ -67,8 +67,8 @@ export function StatsDashboard({ stats }: {
                         {stats.topItems.length === 0 ? (
                             <p className="text-sm text-slate-500">No consumption data yet</p>
                         ) : (
-                            stats.topItems.map((item, index) => (
-                                <div key={index} className="flex items-center justify-between">
+                            stats.topItems.map((item) => (
+                                <div key={`${item.itemName}-${item.itemCategory}`} className="flex items-center justify-between">
                                     <div className="flex-1 min-w-0">
                                         <p className="text-sm font-medium text-white truncate">{item.itemName || 'Unknown Item'}</p>
                                         <p className="text-xs text-slate-500">{item.itemCategory || 'Uncategorized'}</p>
@@ -91,15 +91,15 @@ export function StatsDashboard({ stats }: {
                         {stats.categoryStats.length === 0 ? (
                             <p className="text-sm text-slate-500">No category data yet</p>
                         ) : (
-                            stats.categoryStats.map((cat, index) => (
-                                <div key={index} className="flex items-center justify-between">
+                            stats.categoryStats.map((cat) => (
+                                <div key={cat.category || 'uncategorized'} className="flex items-center justify-between">
                                     <p className="text-sm font-medium text-white">{cat.category || 'Uncategorized'}</p>
                                     <div className="flex items-center gap-3">
                                         <div className="h-2 w-24 bg-slate-700 rounded-full overflow-hidden">
                                             <div
                                                 className="h-full bg-blue-500"
                                                 style={{
-                                                    width: `${(cat.totalConsumed / stats.totalConsumed) * 100}%`
+                                                    width: `${stats.totalConsumed > 0 ? (cat.totalConsumed / stats.totalConsumed) * 100 : 0}%`
                                                 }}
                                             />
                                         </div>

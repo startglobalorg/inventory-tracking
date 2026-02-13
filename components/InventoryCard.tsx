@@ -18,198 +18,109 @@ export function InventoryCard({ item, mode = 'consume' }: { item: Item; mode?: '
     const batchSize = item.quantityPerUnit || 1;
     const unitName = item.unitName || 'case';
 
+    const isConsume = mode === 'consume';
+    const buttonColor = isConsume ? 'bg-red-600 hover:bg-red-700' : 'bg-green-600 hover:bg-green-700';
+    const focusColor = isConsume ? 'focus:ring-red-500' : 'focus:ring-green-500';
+
     return (
-        <div className={`group relative overflow-hidden rounded-xl border bg-slate-800 shadow-lg transition-all hover:shadow-xl ${currentChange !== 0 ? 'border-blue-500 ring-1 ring-blue-500/50' : 'border-slate-700 hover:border-slate-600'
-            }`}>
-            {/* Content */}
-            <div className="p-3 sm:p-4">
-                {/* Header with Badges */}
-                <div className="mb-3 flex items-start justify-between gap-2">
-                    <div className="flex-1">
-                        <Link href={`/item/${item.id}`} className="hover:underline">
-                            <h3 className="text-base sm:text-lg font-bold text-white line-clamp-2">
-                                {item.name}
-                            </h3>
-                        </Link>
-                        <p className="mt-1 text-xs text-slate-400">{item.category}</p>
-                    </div>
-                    <div className="shrink-0 flex flex-col gap-1 items-end">
-                        {isLowStock && (
-                            <span className="rounded-full bg-orange-500 px-2 py-1 text-xs font-bold text-white">
-                                LOW
-                            </span>
-                        )}
-                        {currentChange !== 0 && (
-                            <span className="rounded-full bg-blue-600 px-2 py-1 text-xs font-bold text-white">
-                                {currentChange > 0 ? '+' : ''}{currentChange} in basket
-                            </span>
-                        )}
-                    </div>
-                </div>
-
-                {/* Stock Display */}
-                <div className="mb-3 sm:mb-4 rounded-lg bg-slate-900 p-2 sm:p-3 text-center">
-                    <p className="text-xs font-medium uppercase tracking-wide text-slate-400">
-                        Stock
-                    </p>
-                    <div className="flex items-center justify-center gap-2">
-                        <p
-                            className={`text-3xl sm:text-4xl font-black ${isLowStock ? 'text-orange-400' : 'text-green-400'
-                                }`}
-                        >
-                            {optimisticStock}
-                        </p>
-                        {currentChange !== 0 && (
-                            <span className="text-xs sm:text-sm font-medium text-slate-500">
-                                ({item.stock})
-                            </span>
-                        )}
-                    </div>
-                    <p className="mt-1 text-xs text-slate-500">
-                        Min: {item.minThreshold}
-                    </p>
-                </div>
-
-                {/* Action Buttons */}
-                <div className="grid gap-2 w-full">
-                    {mode === 'consume' ? (
-                        <>
-                            {/* Batch Amount Button - Large */}
-                            {hasBatchOption && (
-                                <button
-                                    onClick={() => addToCart(item.id, -batchSize)}
-                                    disabled={optimisticStock < batchSize}
-                                    className="w-full rounded-lg bg-red-600 px-2 sm:px-6 py-3 sm:py-4 text-sm sm:text-lg font-bold text-white transition-all hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50 active:scale-95 shadow-lg truncate"
-                                >
-                                    Take {batchSize} ({unitName})
-                                </button>
-                            )}
-
-                            {/* Custom Units Input */}
-                            {hasBatchOption && (
-                                <div className="flex gap-2 w-full max-w-full">
-                                    <div className="flex-1 flex gap-1 min-w-0 overflow-hidden">
-                                        <input
-                                            type="number"
-                                            value={customUnits}
-                                            onChange={(e) => setCustomUnits(e.target.value)}
-                                            placeholder="Units"
-                                            className="flex-1 min-w-0 rounded-lg bg-slate-900 border border-slate-700 text-white px-2 sm:px-3 py-2 text-sm sm:text-base text-center focus:ring-2 focus:ring-red-500 focus:border-transparent"
-                                            min="1"
-                                        />
-                                        <span className="flex items-center px-1 sm:px-2 text-xs sm:text-sm text-slate-400 whitespace-nowrap shrink-0">
-                                            {unitName}s
-                                        </span>
-                                    </div>
-                                    <button
-                                        onClick={() => {
-                                            const units = parseInt(customUnits);
-                                            if (units > 0) {
-                                                addToCart(item.id, -(units * batchSize));
-                                                setCustomUnits('');
-                                            }
-                                        }}
-                                        disabled={!customUnits || parseInt(customUnits) <= 0 || optimisticStock <= 0}
-                                        className="shrink-0 w-16 sm:w-20 rounded-lg bg-red-600 px-2 sm:px-4 py-2 text-sm sm:text-base font-bold text-white transition-all hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50 active:scale-95"
-                                    >
-                                        Take
-                                    </button>
-                                </div>
-                            )}
-
-                            {/* Custom Amount Input (Individual Items) */}
-                            <div className="flex gap-2 w-full max-w-full">
-                                <input
-                                    type="number"
-                                    value={customAmount}
-                                    onChange={(e) => setCustomAmount(e.target.value)}
-                                    placeholder="Custom items"
-                                    className="flex-1 min-w-0 rounded-lg bg-slate-900 border border-slate-700 text-white px-2 sm:px-3 py-2 text-sm text-center focus:ring-2 focus:ring-red-500 focus:border-transparent"
-                                    min="1"
-                                />
-                                <button
-                                    onClick={() => {
-                                        const amount = parseInt(customAmount);
-                                        if (amount > 0) {
-                                            addToCart(item.id, -amount);
-                                            setCustomAmount('');
-                                        }
-                                    }}
-                                    disabled={!customAmount || parseInt(customAmount) <= 0 || optimisticStock <= 0}
-                                    className="shrink-0 w-16 sm:w-20 rounded-lg bg-red-600 px-2 sm:px-4 py-2 text-sm font-bold text-white transition-all hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50 active:scale-95"
-                                >
-                                    Take
-                                </button>
-                            </div>
-                        </>
-                    ) : (
-                        <>
-                            {/* Custom Units Input for Restock */}
-                            {hasBatchOption && (
-                                <div className="flex gap-2 w-full max-w-full">
-                                    <div className="flex-1 flex gap-1 min-w-0 overflow-hidden">
-                                        <input
-                                            type="number"
-                                            value={customUnits}
-                                            onChange={(e) => setCustomUnits(e.target.value)}
-                                            placeholder="Units"
-                                            className="flex-1 min-w-0 rounded-lg bg-slate-900 border border-slate-700 text-white px-2 sm:px-3 py-2 text-sm sm:text-base text-center focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                                            min="1"
-                                        />
-                                        <span className="flex items-center px-1 sm:px-2 text-xs sm:text-sm text-slate-400 whitespace-nowrap shrink-0">
-                                            {unitName}s
-                                        </span>
-                                    </div>
-                                    <button
-                                        onClick={() => {
-                                            const units = parseInt(customUnits);
-                                            if (units > 0) {
-                                                addToCart(item.id, units * batchSize);
-                                                setCustomUnits('');
-                                            }
-                                        }}
-                                        disabled={!customUnits || parseInt(customUnits) <= 0}
-                                        className="shrink-0 w-16 sm:w-20 rounded-lg bg-green-600 px-2 sm:px-4 py-2 text-sm sm:text-base font-bold text-white transition-all hover:bg-green-700 disabled:cursor-not-allowed disabled:opacity-50 active:scale-95"
-                                    >
-                                        Add
-                                    </button>
-                                </div>
-                            )}
-
-                            {/* Custom Amount Input for Restock (Individual Items) */}
-                            <div className="flex gap-2 w-full max-w-full">
-                                <input
-                                    type="number"
-                                    value={customAmount}
-                                    onChange={(e) => setCustomAmount(e.target.value)}
-                                    placeholder="Custom items"
-                                    className="flex-1 min-w-0 rounded-lg bg-slate-900 border border-slate-700 text-white px-2 sm:px-3 py-2 text-sm text-center focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                                    min="1"
-                                />
-                                <button
-                                    onClick={() => {
-                                        const amount = parseInt(customAmount);
-                                        if (amount > 0) {
-                                            addToCart(item.id, amount);
-                                            setCustomAmount('');
-                                        }
-                                    }}
-                                    disabled={!customAmount || parseInt(customAmount) <= 0}
-                                    className="shrink-0 w-16 sm:w-20 rounded-lg bg-green-600 px-2 sm:px-4 py-2 text-sm font-bold text-white transition-all hover:bg-green-700 disabled:cursor-not-allowed disabled:opacity-50 active:scale-95"
-                                >
-                                    Add
-                                </button>
-                            </div>
-                        </>
+        <div className={`rounded-xl border bg-slate-800 shadow-lg ${currentChange !== 0 ? 'border-blue-500 ring-1 ring-blue-500/50' : 'border-slate-700'}`}>
+            <div className="p-4">
+                {/* Title */}
+                <div className="mb-3">
+                    <Link href={`/item/${item.id}`} className="hover:underline">
+                        <h3 className="text-lg font-bold text-white">{item.name}</h3>
+                    </Link>
+                    <p className="text-xs text-slate-400">{item.category}</p>
+                    {isLowStock && (
+                        <span className="inline-block mt-1 rounded-full bg-orange-500 px-2 py-0.5 text-xs font-bold text-white">
+                            LOW STOCK
+                        </span>
+                    )}
+                    {currentChange !== 0 && (
+                        <span className="inline-block mt-1 ml-1 rounded-full bg-blue-600 px-2 py-0.5 text-xs font-bold text-white">
+                            {currentChange > 0 ? '+' : ''}{currentChange} in basket
+                        </span>
                     )}
                 </div>
 
-                {/* SKU - Only show in restock mode */}
-                {mode === 'restock' && (
-                    <p className="mt-3 text-center font-mono text-xs text-slate-500">
-                        {item.sku}
+                {/* Stock */}
+                <div className="mb-4 rounded-lg bg-slate-900 p-3 text-center">
+                    <p className="text-xs text-slate-400 uppercase">Stock</p>
+                    <p className={`text-4xl font-black ${isLowStock ? 'text-orange-400' : 'text-green-400'}`}>
+                        {optimisticStock}
                     </p>
-                )}
+                    <p className="text-xs text-slate-500">Min: {item.minThreshold}</p>
+                </div>
+
+                {/* Action Rows */}
+                <div className="space-y-2">
+                    {/* Quick batch button (consume mode only) */}
+                    {isConsume && hasBatchOption && (
+                        <button
+                            onClick={() => addToCart(item.id, -batchSize)}
+                            disabled={optimisticStock < batchSize}
+                            className={`w-full rounded-lg ${buttonColor} py-3 text-base font-bold text-white disabled:opacity-50`}
+                        >
+                            Take {batchSize} ({unitName})
+                        </button>
+                    )}
+
+                    {/* Units row */}
+                    {hasBatchOption && (
+                        <div style={{ display: 'flex', gap: '8px' }}>
+                            <input
+                                type="number"
+                                value={customUnits}
+                                onChange={(e) => setCustomUnits(e.target.value)}
+                                placeholder={`# ${unitName}s`}
+                                min="1"
+                                className={`flex-1 rounded-lg bg-slate-900 border border-slate-700 text-white px-3 py-2 text-center ${focusColor} focus:ring-2`}
+                                style={{ minWidth: 0 }}
+                            />
+                            <button
+                                onClick={() => {
+                                    const units = parseInt(customUnits, 10);
+                                    if (units > 0) {
+                                        addToCart(item.id, isConsume ? -(units * batchSize) : units * batchSize);
+                                        setCustomUnits('');
+                                    }
+                                }}
+                                disabled={!customUnits || parseInt(customUnits, 10) <= 0 || (isConsume && parseInt(customUnits, 10) * batchSize > optimisticStock)}
+                                className={`rounded-lg ${buttonColor} px-4 py-2 font-bold text-white disabled:opacity-50`}
+                                style={{ flexShrink: 0 }}
+                            >
+                                {isConsume ? 'Take' : 'Add'}
+                            </button>
+                        </div>
+                    )}
+
+                    {/* Custom items row */}
+                    <div style={{ display: 'flex', gap: '8px' }}>
+                        <input
+                            type="number"
+                            value={customAmount}
+                            onChange={(e) => setCustomAmount(e.target.value)}
+                            placeholder="# items"
+                            min="1"
+                            className={`flex-1 rounded-lg bg-slate-900 border border-slate-700 text-white px-3 py-2 text-center ${focusColor} focus:ring-2`}
+                            style={{ minWidth: 0 }}
+                        />
+                        <button
+                            onClick={() => {
+                                const amount = parseInt(customAmount, 10);
+                                if (amount > 0) {
+                                    addToCart(item.id, isConsume ? -amount : amount);
+                                    setCustomAmount('');
+                                }
+                            }}
+                            disabled={!customAmount || parseInt(customAmount, 10) <= 0 || (isConsume && parseInt(customAmount, 10) > optimisticStock)}
+                            className={`rounded-lg ${buttonColor} px-4 py-2 font-bold text-white disabled:opacity-50`}
+                            style={{ flexShrink: 0 }}
+                        >
+                            {isConsume ? 'Take' : 'Add'}
+                        </button>
+                    </div>
+                </div>
             </div>
         </div>
     );

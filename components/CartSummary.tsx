@@ -10,7 +10,7 @@ import type { Item } from '@/db/schema';
 
 export function CartSummary({ allItems }: { allItems: Item[] }) {
     const router = useRouter();
-    const { items, totalItems, clearCart, linkedOrderId } = useCart();
+    const { items, totalItems, clearCart, linkedOrderId, addToCart } = useCart();
     const { showToast } = useToast();
     const [isOpen, setIsOpen] = useState(false);
     const [userName, setUserName] = useState('');
@@ -108,7 +108,7 @@ export function CartSummary({ allItems }: { allItems: Item[] }) {
 
             {/* Review Modal / Sheet */}
             {isOpen && (
-                <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 backdrop-blur-sm p-4 sm:items-center">
+                <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 backdrop-blur-sm p-4 sm:items-center" role="dialog" aria-modal="true" aria-label="Review order">
                     <div className="w-full max-w-md rounded-2xl bg-slate-900 border border-slate-700 shadow-2xl animate-slide-up max-h-[80vh] flex flex-col">
                         <div className="p-6 flex flex-col h-full">
                             <div className="flex items-center justify-between mb-4">
@@ -135,15 +135,55 @@ export function CartSummary({ allItems }: { allItems: Item[] }) {
                             {/* Scrollable Items List */}
                             <div className="flex-1 overflow-y-auto mb-6 pr-2 space-y-3">
                                 {cartDetails.map((detail) => {
-                                    const isCase = Math.abs(detail.amount) >= detail.quantityPerUnit && detail.quantityPerUnit > 1;
                                     const displayAmount = detail.amount > 0 ? `+${detail.amount}` : detail.amount;
 
                                     return (
-                                        <div key={detail.id} className="flex justify-between items-center rounded-lg bg-slate-800 p-3">
-                                            <span className="font-medium text-white">{detail.name}</span>
-                                            <span className={`font-bold ${detail.amount > 0 ? 'text-green-400' : 'text-red-400'}`}>
-                                                {displayAmount}
-                                            </span>
+                                        <div key={detail.id} className="rounded-lg bg-slate-800 p-3 space-y-2">
+                                            <div className="flex justify-between items-center">
+                                                <span className="font-medium text-white">{detail.name}</span>
+                                                <span className={`font-bold ${detail.amount > 0 ? 'text-green-400' : 'text-red-400'}`}>
+                                                    {displayAmount}
+                                                </span>
+                                            </div>
+
+                                            {/* Adjustment Controls */}
+                                            <div className="flex items-center gap-2">
+                                                <div className="flex items-center gap-1 bg-slate-700 rounded-lg p-1">
+                                                    {/* Decrease quantity (reduce consumption) */}
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => addToCart(detail.id, 1)}
+                                                        className="h-8 w-8 rounded-md bg-slate-600 text-white font-bold hover:bg-slate-500 active:scale-95 transition-all"
+                                                        title="Reduce quantity"
+                                                    >
+                                                        −
+                                                    </button>
+
+                                                    <span className="px-3 text-sm font-semibold text-white min-w-[3rem] text-center">
+                                                        {Math.abs(detail.amount)}
+                                                    </span>
+
+                                                    {/* Increase quantity (add more consumption) */}
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => addToCart(detail.id, -1)}
+                                                        className="h-8 w-8 rounded-md bg-slate-600 text-white font-bold hover:bg-slate-500 active:scale-95 transition-all"
+                                                        title="Increase quantity"
+                                                    >
+                                                        +
+                                                    </button>
+                                                </div>
+
+                                                {/* Remove from cart */}
+                                                <button
+                                                    type="button"
+                                                    onClick={() => addToCart(detail.id, -detail.amount)}
+                                                    className="ml-auto h-8 px-3 rounded-md bg-red-900/50 text-red-200 text-sm font-semibold hover:bg-red-900 border border-red-800 active:scale-95 transition-all"
+                                                    title="Remove from cart"
+                                                >
+                                                    Remove
+                                                </button>
+                                            </div>
                                         </div>
                                     );
                                 })}

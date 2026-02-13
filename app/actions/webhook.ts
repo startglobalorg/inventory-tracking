@@ -1,6 +1,6 @@
 'use server';
 
-const WEBHOOK_URL = 'https://n8n.startglobal.org/webhook/4576bef6-c2b0-4560-852e-93e9cf7d72ae';
+const WEBHOOK_URL = process.env.WEBHOOK_URL || 'https://n8n.startglobal.org/webhook/4576bef6-c2b0-4560-852e-93e9cf7d72ae';
 
 export async function notifyLowStock(itemData: {
     id: string;
