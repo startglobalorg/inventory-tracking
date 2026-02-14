@@ -25,6 +25,8 @@ export function VolunteerRequestForm({ location, availableItems }: VolunteerRequ
     const [isSuccess, setIsSuccess] = useState(false);
     const [isReviewOpen, setIsReviewOpen] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [customInputOpen, setCustomInputOpen] = useState<Record<string, boolean>>({});
+    const [customInputValues, setCustomInputValues] = useState<Record<string, string>>({});
 
     const updateQuantity = (itemId: string, delta: number) => {
         setQuantities(prev => {
@@ -49,6 +51,25 @@ export function VolunteerRequestForm({ location, availableItems }: VolunteerRequ
     };
 
     const totalItems = Object.values(quantities).reduce((sum, qty) => sum + qty, 0);
+
+    const toggleCustomInput = (itemId: string) => {
+        setCustomInputOpen(prev => ({
+            ...prev,
+            [itemId]: !prev[itemId]
+        }));
+        if (!customInputOpen[itemId]) {
+            setCustomInputValues(prev => ({ ...prev, [itemId]: '' }));
+        }
+    };
+
+    const handleCustomAmountSubmit = (itemId: string) => {
+        const value = parseInt(customInputValues[itemId] || '0', 10);
+        if (value > 0) {
+            updateQuantity(itemId, value);
+            setCustomInputOpen(prev => ({ ...prev, [itemId]: false }));
+            setCustomInputValues(prev => ({ ...prev, [itemId]: '' }));
+        }
+    };
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -182,28 +203,68 @@ export function VolunteerRequestForm({ location, availableItems }: VolunteerRequ
                                                             </span>
                                                         )}
                                                     </div>
-                                                    <div className="flex gap-2">
-                                                        {hasCase && (
+                                                    <div className="flex flex-col gap-2">
+                                                        <div className="flex gap-2">
+                                                            {hasCase && (
+                                                                <button
+                                                                    onClick={() => updateQuantity(item.id, caseSize)}
+                                                                    className="flex-1 rounded-lg bg-blue-600 px-4 py-3 text-sm font-bold text-white hover:bg-blue-700 active:scale-95 transition-all"
+                                                                >
+                                                                    +1 {unitName} ({caseSize})
+                                                                </button>
+                                                            )}
                                                             <button
-                                                                onClick={() => updateQuantity(item.id, caseSize)}
-                                                                className="flex-1 rounded-lg bg-blue-600 px-4 py-3 text-sm font-bold text-white hover:bg-blue-700 active:scale-95 transition-all"
+                                                                onClick={() => updateQuantity(item.id, 1)}
+                                                                className={`rounded-lg bg-slate-700 px-4 py-3 text-sm font-bold text-white hover:bg-slate-600 active:scale-95 transition-all ${hasCase ? 'flex-1' : 'flex-1'}`}
                                                             >
-                                                                +1 {unitName} ({caseSize})
+                                                                +1 item
                                                             </button>
-                                                        )}
-                                                        <button
-                                                            onClick={() => updateQuantity(item.id, 1)}
-                                                            className={`rounded-lg bg-slate-700 px-4 py-3 text-sm font-bold text-white hover:bg-slate-600 active:scale-95 transition-all ${hasCase ? 'flex-1' : 'flex-[2]'}`}
-                                                        >
-                                                            +1 item
-                                                        </button>
-                                                        {qty > 0 && (
-                                                            <button
-                                                                onClick={() => setQuantity(item.id, 0)}
-                                                                className="rounded-lg bg-red-900/50 border border-red-700 px-4 py-3 text-sm font-bold text-red-200 hover:bg-red-900 active:scale-95 transition-all"
-                                                            >
-                                                                Clear
-                                                            </button>
+                                                            {!hasCase && (
+                                                                <button
+                                                                    onClick={() => toggleCustomInput(item.id)}
+                                                                    className={`flex-1 rounded-lg px-4 py-3 text-sm font-bold transition-all active:scale-95 ${
+                                                                        customInputOpen[item.id]
+                                                                            ? 'bg-blue-600 text-white'
+                                                                            : 'bg-slate-600 text-white hover:bg-slate-500'
+                                                                    }`}
+                                                                >
+                                                                    Custom
+                                                                </button>
+                                                            )}
+                                                            {qty > 0 && (
+                                                                <button
+                                                                    onClick={() => setQuantity(item.id, 0)}
+                                                                    className="rounded-lg bg-red-900/50 border border-red-700 px-4 py-3 text-sm font-bold text-red-200 hover:bg-red-900 active:scale-95 transition-all"
+                                                                >
+                                                                    Clear
+                                                                </button>
+                                                            )}
+                                                        </div>
+                                                        {!hasCase && customInputOpen[item.id] && (
+                                                            <div className="flex gap-2">
+                                                                <input
+                                                                    type="number"
+                                                                    inputMode="numeric"
+                                                                    min="1"
+                                                                    placeholder="Enter amount"
+                                                                    value={customInputValues[item.id] || ''}
+                                                                    onChange={(e) => setCustomInputValues(prev => ({ ...prev, [item.id]: e.target.value }))}
+                                                                    onKeyDown={(e) => {
+                                                                        if (e.key === 'Enter') {
+                                                                            e.preventDefault();
+                                                                            handleCustomAmountSubmit(item.id);
+                                                                        }
+                                                                    }}
+                                                                    className="flex-1 rounded-lg bg-slate-900 border border-slate-600 px-4 py-3 text-white text-sm font-medium focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none"
+                                                                />
+                                                                <button
+                                                                    onClick={() => handleCustomAmountSubmit(item.id)}
+                                                                    disabled={!customInputValues[item.id] || parseInt(customInputValues[item.id]) <= 0}
+                                                                    className="rounded-lg bg-green-600 px-6 py-3 text-sm font-bold text-white hover:bg-green-700 active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                                                                >
+                                                                    Add
+                                                                </button>
+                                                            </div>
                                                         )}
                                                     </div>
                                                 </div>

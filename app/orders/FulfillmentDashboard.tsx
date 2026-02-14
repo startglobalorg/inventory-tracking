@@ -143,7 +143,7 @@ function OrderCard({
 export function FulfillmentDashboard({ initialOrders }: FulfillmentDashboardProps) {
     const router = useRouter();
     const [orders, setOrders] = useState<OrderWithDetails[]>(initialOrders);
-    const [viewMode, setViewMode] = useState<'kanban' | 'list'>('list');
+    const [viewMode, setViewMode] = useState<'kanban' | 'list'>('kanban');
     const [showDone, setShowDone] = useState(false);
 
     // Refresh orders periodically
