@@ -23,7 +23,18 @@ export function InventoryCard({ item, mode = 'consume' }: { item: Item; mode?: '
     const focusColor = isConsume ? 'focus:ring-red-500' : 'focus:ring-green-500';
 
     return (
-        <div className={`rounded-xl border bg-slate-800 shadow-lg ${currentChange !== 0 ? 'border-blue-500 ring-1 ring-blue-500/50' : 'border-slate-700'}`}>
+        <div className={`rounded-xl border bg-slate-800 shadow-lg relative ${
+            currentChange !== 0
+                ? 'border-blue-500 ring-1 ring-blue-500/50'
+                : item.coldStorage
+                    ? 'border-blue-400'
+                    : 'border-slate-700'
+        }`}>
+            {item.coldStorage && (
+                <div className="absolute top-2 right-2 text-2xl" title="Cold Storage Item">
+                    ❄️
+                </div>
+            )}
             <div className="p-4">
                 {/* Title */}
                 <div className="mb-3">

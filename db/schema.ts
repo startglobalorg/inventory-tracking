@@ -15,6 +15,9 @@ export const items = sqliteTable('items', {
     quantityPerUnit: integer('quantity_per_unit').default(1),
     unitName: text('unit_name').default('case'),
 
+    // Cold storage designation
+    coldStorage: integer('cold_storage', { mode: 'boolean' }).notNull().default(sql`0`),
+
     createdAt: integer('created_at', { mode: 'timestamp' })
         .notNull()
         .default(sql`(unixepoch())`),
@@ -57,6 +60,9 @@ export const orders = sqliteTable('orders', {
     status: text('status', {
         enum: ['new', 'in_progress', 'done']
     }).notNull().default('new'),
+    storageType: text('storage_type', {
+        enum: ['normal', 'cold']
+    }).notNull().default(sql`'normal'`),
     createdAt: integer('created_at', { mode: 'timestamp' })
         .notNull()
         .default(sql`(unixepoch())`),

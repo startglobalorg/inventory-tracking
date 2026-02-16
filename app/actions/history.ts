@@ -216,3 +216,83 @@ export async function deleteOrderLog(logId: string) {
         return { success: false, error: error instanceof Error ? error.message : 'Failed to delete order log' };
     }
 }
+
+export async function getStockOverTime() {
+    try {
+        // Get current total stock
+        const currentStockResult = await db
+            .select({
+                totalStock: sql<number>`SUM(CAST(${items.stock} AS INTEGER))`,
+            })
+            .from(items);
+
+        const currentTotalStock = currentStockResult[0]?.totalStock || 0;
+
+        // Get all logs ordered by createdAt DESC
+        const allLogs = await db
+            .select({
+                changeAmount: logs.changeAmount,
+                createdAt: logs.createdAt,
+            })
+            .from(logs)
+            .orderBy(desc(logs.createdAt));
+
+        if (allLogs.length === 0) {
+            // No history, return current stock only
+            return {
+                success: true,
+                data: [{
+                    date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+                    totalStock: currentTotalStock,
+                }],
+            };
+        }
+
+        // Build historical data by walking backward from current stock
+        const dataPoints: { timestamp: number; totalStock: number }[] = [];
+        let runningStock = currentTotalStock;
+
+        // Add current point
+        dataPoints.push({
+            timestamp: Date.now(),
+            totalStock: runningStock,
+        });
+
+        // Walk backward through logs
+        for (const log of allLogs) {
+            runningStock -= log.changeAmount;
+            dataPoints.push({
+                timestamp: log.createdAt.getTime(),
+                totalStock: runningStock,
+            });
+        }
+
+        // Reverse to get chronological order
+        dataPoints.reverse();
+
+        // Group by day to reduce data points
+        const dailyData = new Map<string, number>();
+        for (const point of dataPoints) {
+            const date = new Date(point.timestamp).toLocaleDateString('en-US', {
+                month: 'short',
+                day: 'numeric',
+            });
+            // Keep the last value for each day (most recent)
+            dailyData.set(date, point.totalStock);
+        }
+
+        // Convert to array format for chart
+        const chartData = Array.from(dailyData.entries()).map(([date, totalStock]) => ({
+            date,
+            totalStock,
+        }));
+
+        return {
+            success: true,
+            data: chartData,
+        };
+    } catch (error) {
+        console.error('Error fetching stock over time:', error);
+        return { success: false, error: 'Failed to fetch stock history' };
+    }
+}

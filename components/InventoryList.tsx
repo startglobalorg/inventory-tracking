@@ -1,25 +1,47 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import Link from 'next/link';
 import type { Item } from '@/db/schema';
 import { InventoryCard } from '@/components/InventoryCard';
 
 export function InventoryList({ initialItems, mode = 'consume' }: { initialItems: Item[]; mode?: 'consume' | 'restock' }) {
     const [searchQuery, setSearchQuery] = useState('');
+    const [viewType, setViewType] = useState<'normal' | 'cold'>(() => {
+        if (typeof window !== 'undefined') {
+            const saved = localStorage.getItem('inventory-view-preference');
+            return (saved === 'cold' ? 'cold' : 'normal') as 'normal' | 'cold';
+        }
+        return 'normal';
+    });
+
+    // Save view preference to localStorage
+    useEffect(() => {
+        if (typeof window !== 'undefined') {
+            localStorage.setItem('inventory-view-preference', viewType);
+        }
+    }, [viewType]);
 
     // Client-side filtering
     const filteredItems = useMemo(() => {
-        if (!searchQuery.trim()) return initialItems;
-
-        const query = searchQuery.toLowerCase();
-        return initialItems.filter(
-            (item) =>
-                item.name.toLowerCase().includes(query) ||
-                item.sku.toLowerCase().includes(query) ||
-                item.category.toLowerCase().includes(query)
+        // First filter by storage type
+        let result = initialItems.filter(item =>
+            viewType === 'cold' ? item.coldStorage : !item.coldStorage
         );
-    }, [initialItems, searchQuery]);
+
+        // Then apply search filter
+        if (searchQuery.trim()) {
+            const query = searchQuery.toLowerCase();
+            result = result.filter(
+                (item) =>
+                    item.name.toLowerCase().includes(query) ||
+                    item.sku.toLowerCase().includes(query) ||
+                    item.category.toLowerCase().includes(query)
+            );
+        }
+
+        return result;
+    }, [initialItems, searchQuery, viewType]);
 
     const stats = useMemo(() => {
         const totalItems = filteredItems.length;
@@ -65,7 +87,13 @@ export function InventoryList({ initialItems, mode = 'consume' }: { initialItems
                                         href="/orders"
                                         className="rounded-lg bg-slate-800 px-3 sm:px-4 py-2 text-xs sm:text-sm font-semibold text-purple-400 transition-hover border border-slate-700 hover:border-purple-500 hover:text-purple-300"
                                     >
-                                        Orders
+                                        Normal Orders
+                                    </Link>
+                                    <Link
+                                        href="/orders/cold-storage"
+                                        className="rounded-lg bg-slate-800 px-3 sm:px-4 py-2 text-xs sm:text-sm font-semibold text-cyan-400 transition-hover border border-slate-700 hover:border-cyan-500 hover:text-cyan-300"
+                                    >
+                                        Cold Orders ❄️
                                     </Link>
                                     <Link
                                         href="/history"
@@ -90,6 +118,30 @@ export function InventoryList({ initialItems, mode = 'consume' }: { initialItems
                                 </Link>
                             )}
                         </div>
+                    </div>
+
+                    {/* Storage Type Tabs */}
+                    <div className="flex gap-2 mb-4">
+                        <button
+                            onClick={() => setViewType('normal')}
+                            className={`flex-1 rounded-lg px-4 py-2.5 text-sm font-semibold transition-all ${
+                                viewType === 'normal'
+                                    ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/30'
+                                    : 'bg-slate-800 text-slate-400 hover:bg-slate-700 hover:text-white border border-slate-700'
+                            }`}
+                        >
+                            Normal Storage
+                        </button>
+                        <button
+                            onClick={() => setViewType('cold')}
+                            className={`flex-1 rounded-lg px-4 py-2.5 text-sm font-semibold transition-all ${
+                                viewType === 'cold'
+                                    ? 'bg-cyan-600 text-white shadow-lg shadow-cyan-500/30'
+                                    : 'bg-slate-800 text-slate-400 hover:bg-slate-700 hover:text-white border border-slate-700'
+                            }`}
+                        >
+                            Cold Storage ❄️
+                        </button>
                     </div>
 
                     {/* Search Bar */}

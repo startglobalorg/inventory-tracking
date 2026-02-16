@@ -62,6 +62,7 @@ export default function AddItemPage() {
         minThreshold: 0,
         category: '',
         quantityPerUnit: 1,
+        coldStorage: false,
     });
     const [error, setError] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -91,6 +92,22 @@ export default function AddItemPage() {
             brand.toLowerCase().includes(brandSearch.toLowerCase())
         );
     }, [brandSearch]);
+
+    // Determine if category is liquid (uses ml) or solid (uses g)
+    const isLiquidCategory = useMemo(() => {
+        const liquidCategories = [
+            'Energy Drinks',
+            'Soft Drinks',
+            'Juices',
+            'Water',
+            'Coffee & Tea',
+            'Milk & Dairy',
+        ];
+        return liquidCategories.includes(formData.category);
+    }, [formData.category]);
+
+    const sizeUnit = isLiquidCategory ? 'ml' : 'g';
+    const sizeLabel = isLiquidCategory ? 'milliliters' : 'grams';
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -298,7 +315,7 @@ export default function AddItemPage() {
                         {/* Size */}
                         <div>
                             <label htmlFor="size" className="block text-sm font-semibold text-white mb-2">
-                                Size (ml) *
+                                Size ({sizeUnit}) *
                             </label>
                             <input
                                 type="number"
@@ -308,9 +325,9 @@ export default function AddItemPage() {
                                 value={formData.size}
                                 onChange={(e) => setFormData({ ...formData, size: e.target.value })}
                                 className="w-full rounded-lg bg-slate-800 border border-slate-700 text-white px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                placeholder="e.g., 500"
+                                placeholder={isLiquidCategory ? "e.g., 500" : "e.g., 100"}
                             />
-                            <p className="mt-1 text-xs text-slate-500">Enter size in milliliters (ml)</p>
+                            <p className="mt-1 text-xs text-slate-500">Enter size in {sizeLabel} ({sizeUnit})</p>
                         </div>
 
                         {/* Auto-generated SKU Display */}
@@ -378,6 +395,23 @@ export default function AddItemPage() {
                                 className="w-full rounded-lg bg-slate-800 border border-slate-700 text-white px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                             />
                             <p className="mt-1 text-xs text-slate-500">e.g., 24 for a case of 24 bottles</p>
+                        </div>
+
+                        {/* Cold Storage Checkbox */}
+                        <div>
+                            <label className="flex items-center gap-3 cursor-pointer">
+                                <input
+                                    type="checkbox"
+                                    id="coldStorage"
+                                    checked={formData.coldStorage}
+                                    onChange={(e) => setFormData({ ...formData, coldStorage: e.target.checked })}
+                                    className="w-5 h-5 rounded bg-slate-800 border-slate-700 text-cyan-600 focus:ring-2 focus:ring-cyan-500"
+                                />
+                                <span className="text-sm font-semibold text-white">
+                                    Cold Storage Item ❄️
+                                </span>
+                            </label>
+                            <p className="mt-1 text-xs text-slate-500 ml-8">Check if this item requires refrigeration</p>
                         </div>
                     </div>
 

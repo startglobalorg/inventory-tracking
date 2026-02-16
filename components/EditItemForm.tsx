@@ -22,6 +22,7 @@ export function EditItemForm({ item }: { item: Item }) {
         category: item.category,
         quantityPerUnit: item.quantityPerUnit || 1,
         unitName: item.unitName || 'unit',
+        coldStorage: item.coldStorage || false,
     });
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -194,6 +195,23 @@ export function EditItemForm({ item }: { item: Item }) {
                                 placeholder="e.g., case, box, pack"
                             />
                         </div>
+                    </div>
+
+                    {/* Cold Storage Checkbox */}
+                    <div>
+                        <label className="flex items-center gap-3 cursor-pointer">
+                            <input
+                                type="checkbox"
+                                id="coldStorage"
+                                checked={formData.coldStorage}
+                                onChange={(e) => setFormData({ ...formData, coldStorage: e.target.checked })}
+                                className="w-5 h-5 rounded bg-slate-800 border-slate-600 text-cyan-600 focus:ring-2 focus:ring-cyan-500"
+                            />
+                            <span className="text-sm font-medium text-slate-300">
+                                Cold Storage Item ❄️
+                            </span>
+                        </label>
+                        <p className="mt-1 text-xs text-slate-500 ml-8">Check if this item requires refrigeration</p>
                     </div>
                 </div>
 

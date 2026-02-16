@@ -1,15 +1,17 @@
-import { getOrderHistory, getOrderStatistics } from '../actions/history';
+import { getOrderHistory, getOrderStatistics, getStockOverTime } from '../actions/history';
 import { OrderHistoryClient } from '@/components/OrderHistoryClient';
 import { StatsDashboard } from '@/components/StatsDashboard';
+import { StockGraphCard } from '@/components/StockGraphCard';
 import Link from 'next/link';
 
 // Force dynamic rendering since this page requires database access
 export const dynamic = 'force-dynamic';
 
 export default async function OrderHistoryPage() {
-    const [historyResult, statsResult] = await Promise.all([
+    const [historyResult, statsResult, stockOverTimeResult] = await Promise.all([
         getOrderHistory(),
         getOrderStatistics(),
+        getStockOverTime(),
     ]);
 
     if (!historyResult.success || !historyResult.data) {
@@ -56,6 +58,17 @@ export default async function OrderHistoryPage() {
 
                 {/* Statistics Dashboard */}
                 <StatsDashboard stats={statsResult.data} />
+
+                {/* Stock Over Time Graph */}
+                <div className="mt-8">
+                    {stockOverTimeResult.success && stockOverTimeResult.data ? (
+                        <StockGraphCard data={stockOverTimeResult.data} />
+                    ) : (
+                        <div className="rounded-lg bg-yellow-900/20 border border-yellow-500 p-4 text-yellow-200">
+                            Could not load stock history graph
+                        </div>
+                    )}
+                </div>
 
                 {/* Order History Table */}
                 <div className="mt-8">

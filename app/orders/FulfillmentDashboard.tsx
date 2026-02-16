@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, DragEvent } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
@@ -13,6 +13,7 @@ import {
 
 interface FulfillmentDashboardProps {
     initialOrders: OrderWithDetails[];
+    storageType: 'normal' | 'cold';
 }
 
 function formatTimeAgo(date: Date): string {
@@ -34,10 +35,16 @@ function OrderCard({
     order,
     onStatusChange,
     onPrepare,
+    isDragging,
+    onDragStart,
+    onDragEnd,
 }: {
     order: OrderWithDetails;
     onStatusChange: (orderId: string, newStatus: OrderStatus) => void;
     onPrepare: (orderId: string) => void;
+    isDragging?: boolean;
+    onDragStart?: (e: DragEvent<HTMLDivElement>, orderId: string) => void;
+    onDragEnd?: () => void;
 }) {
     const [isUpdating, setIsUpdating] = useState(false);
 
@@ -45,6 +52,12 @@ function OrderCard({
         setIsUpdating(true);
         await onStatusChange(order.id, newStatus);
         setIsUpdating(false);
+    };
+
+    const handleDragStart = (e: DragEvent<HTMLDivElement>) => {
+        if (onDragStart) {
+            onDragStart(e, order.id);
+        }
     };
 
     const statusColors = {
@@ -66,7 +79,12 @@ function OrderCard({
     };
 
     return (
-        <div className={`rounded-xl border p-4 ${statusColors[order.status]} transition-all`}>
+        <div
+            draggable
+            onDragStart={handleDragStart}
+            onDragEnd={onDragEnd}
+            className={`rounded-xl border p-4 ${statusColors[order.status]} transition-all cursor-grab active:cursor-grabbing ${isDragging ? 'opacity-50 scale-95' : ''}`}
+        >
             {/* Header */}
             <div className="flex items-start justify-between gap-2 mb-3">
                 <div>
@@ -140,29 +158,65 @@ function OrderCard({
     );
 }
 
-export function FulfillmentDashboard({ initialOrders }: FulfillmentDashboardProps) {
+export function FulfillmentDashboard({ initialOrders, storageType }: FulfillmentDashboardProps) {
     const router = useRouter();
     const [orders, setOrders] = useState<OrderWithDetails[]>(initialOrders);
     const [viewMode, setViewMode] = useState<'kanban' | 'list'>('kanban');
     const [showDone, setShowDone] = useState(false);
+    const [draggedOrderId, setDraggedOrderId] = useState<string | null>(null);
+    const [dragOverColumn, setDragOverColumn] = useState<OrderStatus | null>(null);
+
+    const handleDragStart = (e: DragEvent<HTMLDivElement>, orderId: string) => {
+        setDraggedOrderId(orderId);
+        e.dataTransfer.effectAllowed = 'move';
+        e.dataTransfer.setData('text/plain', orderId);
+    };
+
+    const handleDragEnd = () => {
+        setDraggedOrderId(null);
+        setDragOverColumn(null);
+    };
+
+    const handleDragOver = (e: DragEvent<HTMLDivElement>, status: OrderStatus) => {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'move';
+        setDragOverColumn(status);
+    };
+
+    const handleDragLeave = () => {
+        setDragOverColumn(null);
+    };
+
+    const handleDrop = async (e: DragEvent<HTMLDivElement>, newStatus: OrderStatus) => {
+        e.preventDefault();
+        const orderId = e.dataTransfer.getData('text/plain');
+        if (orderId && draggedOrderId) {
+            const order = orders.find(o => o.id === orderId);
+            if (order && order.status !== newStatus) {
+                await handleStatusChange(orderId, newStatus);
+            }
+        }
+        setDraggedOrderId(null);
+        setDragOverColumn(null);
+    };
 
     // Refresh orders periodically
     useEffect(() => {
         const interval = setInterval(async () => {
-            const result = await getOrders('all');
+            const result = await getOrders('all', storageType);
             if (result.success && result.data) {
                 setOrders(result.data);
             }
         }, 10000); // Refresh every 10 seconds
 
         return () => clearInterval(interval);
-    }, []);
+    }, [storageType]);
 
     const handleStatusChange = async (orderId: string, newStatus: OrderStatus) => {
         const result = await updateOrderStatus(orderId, newStatus);
         if (result.success) {
             // Refresh orders
-            const ordersResult = await getOrders('all');
+            const ordersResult = await getOrders('all', storageType);
             if (ordersResult.success && ordersResult.data) {
                 setOrders(ordersResult.data);
             }
@@ -188,18 +242,28 @@ export function FulfillmentDashboard({ initialOrders }: FulfillmentDashboardProp
     return (
         <div className="pb-8">
             {/* Header */}
-            <div className="sticky top-0 z-10 bg-slate-800 border-b border-slate-700 p-4">
+            <div className={`sticky top-0 z-10 border-b p-4 ${
+                storageType === 'cold'
+                    ? 'bg-cyan-950 border-cyan-700'
+                    : 'bg-slate-800 border-slate-700'
+            }`}>
                 <div className="container mx-auto">
                     <div className="flex items-center justify-between gap-4">
                         <div>
                             <h1 className="text-xl font-bold text-white">
-                                Fulfillment Dashboard
+                                {storageType === 'cold' ? 'Cold Storage Fulfillment ❄️' : 'Normal Warehouse'}
                             </h1>
                             <p className="text-sm text-slate-400">
                                 {newOrders.length} new, {inProgressOrders.length} in progress
                             </p>
                         </div>
                         <div className="flex gap-2">
+                            <Link
+                                href={storageType === 'cold' ? '/orders' : '/orders/cold-storage'}
+                                className="rounded-lg bg-slate-700 px-4 py-2 text-sm font-medium text-white hover:bg-slate-600"
+                            >
+                                {storageType === 'cold' ? 'Normal Warehouse' : 'Cold Storage ❄️'}
+                            </Link>
                             <Link
                                 href="/"
                                 className="rounded-lg bg-slate-700 px-4 py-2 text-sm font-medium text-white hover:bg-slate-600"
@@ -298,7 +362,16 @@ export function FulfillmentDashboard({ initialOrders }: FulfillmentDashboardProp
                     /* Kanban View */
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                         {/* New Column */}
-                        <div className="rounded-xl bg-slate-800/50 border border-slate-700 p-4">
+                        <div
+                            className={`rounded-xl bg-slate-800/50 border p-4 transition-colors ${
+                                dragOverColumn === 'new'
+                                    ? 'border-yellow-500 border-2 bg-yellow-500/10'
+                                    : 'border-slate-700'
+                            }`}
+                            onDrop={(e) => handleDrop(e, 'new')}
+                            onDragOver={(e) => handleDragOver(e, 'new')}
+                            onDragLeave={handleDragLeave}
+                        >
                             <h2 className="text-sm font-bold text-yellow-500 uppercase tracking-wide mb-4 flex items-center gap-2">
                                 <span className="w-3 h-3 rounded-full bg-yellow-500"></span>
                                 New ({newOrders.length})
@@ -310,6 +383,9 @@ export function FulfillmentDashboard({ initialOrders }: FulfillmentDashboardProp
                                         order={order}
                                         onStatusChange={handleStatusChange}
                                         onPrepare={handlePrepareOrder}
+                                        isDragging={draggedOrderId === order.id}
+                                        onDragStart={handleDragStart}
+                                        onDragEnd={handleDragEnd}
                                     />
                                 ))}
                                 {newOrders.length === 0 && (
@@ -321,7 +397,16 @@ export function FulfillmentDashboard({ initialOrders }: FulfillmentDashboardProp
                         </div>
 
                         {/* In Progress Column */}
-                        <div className="rounded-xl bg-slate-800/50 border border-slate-700 p-4">
+                        <div
+                            className={`rounded-xl bg-slate-800/50 border p-4 transition-colors ${
+                                dragOverColumn === 'in_progress'
+                                    ? 'border-blue-500 border-2 bg-blue-500/10'
+                                    : 'border-slate-700'
+                            }`}
+                            onDrop={(e) => handleDrop(e, 'in_progress')}
+                            onDragOver={(e) => handleDragOver(e, 'in_progress')}
+                            onDragLeave={handleDragLeave}
+                        >
                             <h2 className="text-sm font-bold text-blue-500 uppercase tracking-wide mb-4 flex items-center gap-2">
                                 <span className="w-3 h-3 rounded-full bg-blue-500"></span>
                                 In Progress ({inProgressOrders.length})
@@ -333,6 +418,9 @@ export function FulfillmentDashboard({ initialOrders }: FulfillmentDashboardProp
                                         order={order}
                                         onStatusChange={handleStatusChange}
                                         onPrepare={handlePrepareOrder}
+                                        isDragging={draggedOrderId === order.id}
+                                        onDragStart={handleDragStart}
+                                        onDragEnd={handleDragEnd}
                                     />
                                 ))}
                                 {inProgressOrders.length === 0 && (
@@ -345,7 +433,16 @@ export function FulfillmentDashboard({ initialOrders }: FulfillmentDashboardProp
 
                         {/* Done Column */}
                         {showDone && (
-                            <div className="rounded-xl bg-slate-800/50 border border-slate-700 p-4">
+                            <div
+                                className={`rounded-xl bg-slate-800/50 border p-4 transition-colors ${
+                                    dragOverColumn === 'done'
+                                        ? 'border-green-500 border-2 bg-green-500/10'
+                                        : 'border-slate-700'
+                                }`}
+                                onDrop={(e) => handleDrop(e, 'done')}
+                                onDragOver={(e) => handleDragOver(e, 'done')}
+                                onDragLeave={handleDragLeave}
+                            >
                                 <h2 className="text-sm font-bold text-green-500 uppercase tracking-wide mb-4 flex items-center gap-2">
                                     <span className="w-3 h-3 rounded-full bg-green-500"></span>
                                     Done ({doneOrders.length})
@@ -357,6 +454,9 @@ export function FulfillmentDashboard({ initialOrders }: FulfillmentDashboardProp
                                             order={order}
                                             onStatusChange={handleStatusChange}
                                             onPrepare={handlePrepareOrder}
+                                            isDragging={draggedOrderId === order.id}
+                                            onDragStart={handleDragStart}
+                                            onDragEnd={handleDragEnd}
                                         />
                                     ))}
                                     {doneOrders.length === 0 && (

@@ -4,13 +4,13 @@ import { FulfillmentDashboard } from './FulfillmentDashboard';
 export const dynamic = 'force-dynamic';
 
 export default async function FulfillmentPage() {
-    const ordersResult = await getOrders('all');
+    const ordersResult = await getOrders('all', 'normal');
 
     const orders = ordersResult.success ? ordersResult.data || [] : [];
 
     return (
         <main className="min-h-screen bg-slate-900">
-            <FulfillmentDashboard initialOrders={orders} />
+            <FulfillmentDashboard initialOrders={orders} storageType="normal" />
         </main>
     );
 }

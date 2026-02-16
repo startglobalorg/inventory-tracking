@@ -22,6 +22,7 @@ async function seed() {
             imageUrl: 'https://images.unsplash.com/photo-1598614187854-26a60e982dc4?w=400',
             quantityPerUnit: 4,
             unitName: 'pack',
+            coldStorage: false,
         },
         {
             name: 'Coca-Cola (500ml)',
@@ -32,6 +33,7 @@ async function seed() {
             imageUrl: 'https://images.unsplash.com/photo-1622483767028-3f66f32aef97?w=400',
             quantityPerUnit: 24,
             unitName: 'case',
+            coldStorage: false,
         },
         {
             name: 'Perfect Meal Vegan',
@@ -42,6 +44,7 @@ async function seed() {
             imageUrl: 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=400',
             quantityPerUnit: 4,
             unitName: 'pack',
+            coldStorage: false,
         },
         {
             name: 'Isey Skyr',
@@ -52,6 +55,7 @@ async function seed() {
             imageUrl: 'https://images.unsplash.com/photo-1563636619-e9143da7973b?w=400',
             quantityPerUnit: 1,
             unitName: 'unit',
+            coldStorage: true, // Dairy products require refrigeration
         },
     ];
 
