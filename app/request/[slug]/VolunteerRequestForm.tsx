@@ -4,6 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { submitVolunteerRequest } from '@/app/actions/volunteer-orders';
 import type { Location } from '@/db/schema';
+import { BrandHeader } from '@/components/BrandHeader';
 
 interface AvailableItem {
     id: string;
@@ -132,12 +133,13 @@ export function VolunteerRequestForm({ location, availableItems }: VolunteerRequ
     return (
         <div className="pb-32">
             {/* Header */}
-            <div className="sticky top-0 z-10 bg-slate-800 border-b border-slate-700 p-4">
-                <div className="mx-auto max-w-lg">
-                    <div className="flex items-center justify-between mb-2">
-                        <h1 className="text-xl font-bold text-white">
-                            Request Items
-                        </h1>
+            <div className="sticky top-0 z-10">
+                <BrandHeader
+                    title="Coffee Point Request"
+                    subtitle={location.name}
+                />
+                <div className="bg-slate-800 border-b border-slate-700 px-4 py-2">
+                    <div className="mx-auto max-w-lg flex items-center justify-end">
                         <Link
                             href={`/request/${location.slug}/history`}
                             className="rounded-lg bg-slate-700 px-3 py-2 text-xs font-semibold text-slate-300 hover:bg-slate-600 hover:text-white transition-all"
@@ -145,9 +147,6 @@ export function VolunteerRequestForm({ location, availableItems }: VolunteerRequ
                             History
                         </Link>
                     </div>
-                    <p className="text-blue-400 font-medium">
-                        {location.name}
-                    </p>
                 </div>
             </div>
 
@@ -222,11 +221,10 @@ export function VolunteerRequestForm({ location, availableItems }: VolunteerRequ
                                                             {!hasCase && (
                                                                 <button
                                                                     onClick={() => toggleCustomInput(item.id)}
-                                                                    className={`flex-1 rounded-lg px-4 py-3 text-sm font-bold transition-all active:scale-95 ${
-                                                                        customInputOpen[item.id]
+                                                                    className={`flex-1 rounded-lg px-4 py-3 text-sm font-bold transition-all active:scale-95 ${customInputOpen[item.id]
                                                                             ? 'bg-blue-600 text-white'
                                                                             : 'bg-slate-600 text-white hover:bg-slate-500'
-                                                                    }`}
+                                                                        }`}
                                                                 >
                                                                     Custom
                                                                 </button>

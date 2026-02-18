@@ -4,6 +4,7 @@ import { useState, useMemo, useEffect } from 'react';
 import Link from 'next/link';
 import type { Item } from '@/db/schema';
 import { InventoryCard } from '@/components/InventoryCard';
+import { BrandHeader } from '@/components/BrandHeader';
 
 export function InventoryList({ initialItems, mode = 'consume' }: { initialItems: Item[]; mode?: 'consume' | 'restock' }) {
     const [searchQuery, setSearchQuery] = useState('');
@@ -56,24 +57,13 @@ export function InventoryList({ initialItems, mode = 'consume' }: { initialItems
         <div className="min-h-screen bg-slate-950">
             {/* Sticky Header */}
             <header className="sticky top-0 z-40 border-b border-slate-800 bg-slate-900/95 backdrop-blur-sm">
+                <BrandHeader
+                    title={mode === 'restock' ? 'Supplier Restock' : 'Inventory Management'}
+                    subtitle="☕ Coffee Point"
+                />
                 <div className="container mx-auto px-4 py-4">
-                    {/* Title */}
-                    <div className="mb-3 sm:mb-4">
-                        <div className="flex items-start justify-between gap-2 mb-3">
-                            <div>
-                                <h1 className="text-xl sm:text-2xl md:text-3xl font-black text-white">
-                                    Inventory Management
-                                </h1>
-                                <p className="mt-1 text-xs sm:text-sm text-slate-400">
-                                    {mode === 'restock' ? 'Restock Mode' : ''}
-                                </p>
-                            </div>
-                            <div className="hidden sm:block">
-                                <div className="text-2xl font-black text-white">{stats.totalItems}</div>
-                                <div className="text-xs text-slate-400">Items</div>
-                            </div>
-                        </div>
-                        {/* Action Buttons */}
+                    {/* Nav row */}
+                    <div className="mb-4 flex items-center justify-between gap-2 flex-wrap">
                         <div className="flex items-center gap-2 flex-wrap">
                             {mode === 'consume' && (
                                 <>
@@ -85,25 +75,25 @@ export function InventoryList({ initialItems, mode = 'consume' }: { initialItems
                                     </Link>
                                     <Link
                                         href="/orders"
-                                        className="rounded-lg bg-slate-800 px-3 sm:px-4 py-2 text-xs sm:text-sm font-semibold text-purple-400 transition-hover border border-slate-700 hover:border-purple-500 hover:text-purple-300"
+                                        className="rounded-lg bg-slate-800 px-3 sm:px-4 py-2 text-xs sm:text-sm font-semibold text-purple-400 border border-slate-700 hover:border-purple-500 hover:text-purple-300"
                                     >
                                         Normal Orders
                                     </Link>
                                     <Link
                                         href="/orders/cold-storage"
-                                        className="rounded-lg bg-slate-800 px-3 sm:px-4 py-2 text-xs sm:text-sm font-semibold text-cyan-400 transition-hover border border-slate-700 hover:border-cyan-500 hover:text-cyan-300"
+                                        className="rounded-lg bg-slate-800 px-3 sm:px-4 py-2 text-xs sm:text-sm font-semibold text-cyan-400 border border-slate-700 hover:border-cyan-500 hover:text-cyan-300"
                                     >
                                         Cold Orders ❄️
                                     </Link>
                                     <Link
                                         href="/history"
-                                        className="rounded-lg bg-slate-800 px-3 sm:px-4 py-2 text-xs sm:text-sm font-semibold text-slate-400 transition-hover border border-slate-700 hover:border-slate-500 hover:text-white"
+                                        className="rounded-lg bg-slate-800 px-3 sm:px-4 py-2 text-xs sm:text-sm font-semibold text-slate-400 border border-slate-700 hover:border-slate-500 hover:text-white"
                                     >
                                         History
                                     </Link>
                                     <Link
                                         href="/restock"
-                                        className="rounded-lg bg-slate-800 px-3 sm:px-4 py-2 text-xs sm:text-sm font-semibold text-blue-400 transition-hover border border-slate-700 hover:border-blue-500 hover:text-blue-300"
+                                        className="rounded-lg bg-slate-800 px-3 sm:px-4 py-2 text-xs sm:text-sm font-semibold text-blue-400 border border-slate-700 hover:border-blue-500 hover:text-blue-300"
                                     >
                                         Restock
                                     </Link>
@@ -112,11 +102,15 @@ export function InventoryList({ initialItems, mode = 'consume' }: { initialItems
                             {mode === 'restock' && (
                                 <Link
                                     href="/"
-                                    className="rounded-lg bg-slate-800 px-3 sm:px-4 py-2 text-xs sm:text-sm font-semibold text-slate-400 transition-hover border border-slate-700 hover:border-slate-500 hover:text-white"
+                                    className="rounded-lg bg-slate-800 px-3 sm:px-4 py-2 text-xs sm:text-sm font-semibold text-slate-400 border border-slate-700 hover:border-slate-500 hover:text-white"
                                 >
                                     ← Back
                                 </Link>
                             )}
+                        </div>
+                        <div className="hidden sm:block text-right">
+                            <div className="text-2xl font-black text-white">{stats.totalItems}</div>
+                            <div className="text-xs text-slate-400">Items</div>
                         </div>
                     </div>
 
@@ -124,21 +118,19 @@ export function InventoryList({ initialItems, mode = 'consume' }: { initialItems
                     <div className="flex gap-2 mb-4">
                         <button
                             onClick={() => setViewType('normal')}
-                            className={`flex-1 rounded-lg px-4 py-2.5 text-sm font-semibold transition-all ${
-                                viewType === 'normal'
-                                    ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/30'
-                                    : 'bg-slate-800 text-slate-400 hover:bg-slate-700 hover:text-white border border-slate-700'
-                            }`}
+                            className={`flex-1 rounded-lg px-4 py-2.5 text-sm font-semibold transition-all ${viewType === 'normal'
+                                ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/30'
+                                : 'bg-slate-800 text-slate-400 hover:bg-slate-700 hover:text-white border border-slate-700'
+                                }`}
                         >
                             Normal Storage
                         </button>
                         <button
                             onClick={() => setViewType('cold')}
-                            className={`flex-1 rounded-lg px-4 py-2.5 text-sm font-semibold transition-all ${
-                                viewType === 'cold'
-                                    ? 'bg-cyan-600 text-white shadow-lg shadow-cyan-500/30'
-                                    : 'bg-slate-800 text-slate-400 hover:bg-slate-700 hover:text-white border border-slate-700'
-                            }`}
+                            className={`flex-1 rounded-lg px-4 py-2.5 text-sm font-semibold transition-all ${viewType === 'cold'
+                                ? 'bg-cyan-600 text-white shadow-lg shadow-cyan-500/30'
+                                : 'bg-slate-800 text-slate-400 hover:bg-slate-700 hover:text-white border border-slate-700'
+                                }`}
                         >
                             Cold Storage ❄️
                         </button>

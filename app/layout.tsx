@@ -29,13 +29,6 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         <ToastProvider>
-          <header className="bg-slate-900 border-b border-slate-700 shadow-lg">
-            <div className="container mx-auto px-4 py-4 flex items-center justify-center">
-              <h1 className="text-2xl font-bold text-white">
-                START Inventory Management
-              </h1>
-            </div>
-          </header>
           {children}
         </ToastProvider>
       </body>
