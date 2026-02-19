@@ -42,6 +42,10 @@ const BRANDS = [
     'KitKat',
     'Milka',
     'Haribo',
+    'Ovomaltine',
+    'Lindt & Sprüngli',
+    'MAD',
+    'Chief',
     'Pringles',
     'Doritos',
     'Lays',
@@ -50,6 +54,14 @@ const BRANDS = [
     'Perfect You',
     'YFood',
     'Isey',
+    'Emmi',
+    'Maestrani',
+    'Bischofberger',
+    'Schiffchuchi',
+    'Kägi',
+    'Remedy',
+    'Seeberger',
+    'Unbranded'
 ];
 
 export default function AddItemPage() {
