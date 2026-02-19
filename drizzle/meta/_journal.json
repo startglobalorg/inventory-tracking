@@ -8,6 +8,13 @@
       "when": 1770741302522,
       "tag": "0000_add-volunteer-system",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1740000000000,
+      "tag": "0001_add-size-column",
+      "breakpoints": true
     }
   ]
 }

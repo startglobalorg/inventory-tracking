@@ -54,6 +54,7 @@ COPY --from=builder /app/node_modules ./node_modules
 
 # Copy database schema/migrations if needed (for db:push or seeding)
 COPY --from=builder /app/db ./db
+COPY --from=builder /app/drizzle ./drizzle
 COPY --from=builder /app/drizzle.config.ts ./
 
 # Copy initialization scripts
