@@ -8,6 +8,7 @@ import { createItem } from '@/app/actions';
 const CATEGORIES = [
     'Energy Drinks',
     'Soft Drinks',
+    'Protein Drink',
     'Juices',
     'Water',
     'Coffee & Tea',
@@ -110,10 +111,10 @@ export default function AddItemPage() {
         const liquidCategories = [
             'Energy Drinks',
             'Soft Drinks',
+            'Protein Drink',
             'Juices',
             'Water',
             'Coffee & Tea',
-            'Milk & Dairy',
         ];
         return liquidCategories.includes(formData.category);
     }, [formData.category]);
