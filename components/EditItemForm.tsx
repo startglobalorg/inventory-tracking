@@ -17,6 +17,7 @@ export function EditItemForm({ item }: { item: Item }) {
     const [formData, setFormData] = useState({
         name: item.name,
         sku: item.sku,
+        size: item.size || '',
         stock: item.stock,
         minThreshold: item.minThreshold,
         category: item.category,
@@ -100,20 +101,22 @@ export function EditItemForm({ item }: { item: Item }) {
                         />
                     </div>
 
-                    {/* SKU */}
+                    {/* Size */}
                     <div>
-                        <label htmlFor="sku" className="block text-sm font-medium text-slate-300 mb-2">
-                            SKU *
+                        <label htmlFor="size" className="block text-sm font-medium text-slate-300 mb-2">
+                            Size
                         </label>
                         <input
                             type="text"
-                            id="sku"
-                            required
-                            value={formData.sku}
-                            onChange={(e) => setFormData({ ...formData, sku: e.target.value })}
+                            id="size"
+                            value={formData.size}
+                            onChange={(e) => setFormData({ ...formData, size: e.target.value })}
                             className="w-full rounded-lg border border-slate-600 bg-slate-800 px-4 py-2.5 text-white placeholder-slate-500 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                            placeholder="e.g., 500ml, 100g"
                         />
                     </div>
+
+
 
                     {/* Category */}
                     <div>
@@ -163,38 +166,21 @@ export function EditItemForm({ item }: { item: Item }) {
                         </div>
                     </div>
 
-                    {/* Quantity per Unit and Unit Name */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <div>
-                            <label htmlFor="quantityPerUnit" className="block text-sm font-medium text-slate-300 mb-2">
-                                Quantity per Unit *
-                            </label>
-                            <input
-                                type="number"
-                                id="quantityPerUnit"
-                                required
-                                min="1"
-                                value={formData.quantityPerUnit}
-                                onChange={(e) => setFormData({ ...formData, quantityPerUnit: parseInt(e.target.value, 10) })}
-                                className="w-full rounded-lg border border-slate-600 bg-slate-800 px-4 py-2.5 text-white placeholder-slate-500 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
-                            />
-                            <p className="mt-1 text-xs text-slate-500">Items per case/box</p>
-                        </div>
-
-                        <div>
-                            <label htmlFor="unitName" className="block text-sm font-medium text-slate-300 mb-2">
-                                Unit Name *
-                            </label>
-                            <input
-                                type="text"
-                                id="unitName"
-                                required
-                                value={formData.unitName}
-                                onChange={(e) => setFormData({ ...formData, unitName: e.target.value })}
-                                className="w-full rounded-lg border border-slate-600 bg-slate-800 px-4 py-2.5 text-white placeholder-slate-500 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
-                                placeholder="e.g., case, box, pack"
-                            />
-                        </div>
+                    {/* Quantity per Unit */}
+                    <div>
+                        <label htmlFor="quantityPerUnit" className="block text-sm font-medium text-slate-300 mb-2">
+                            Quantity per Unit *
+                        </label>
+                        <input
+                            type="number"
+                            id="quantityPerUnit"
+                            required
+                            min="1"
+                            value={formData.quantityPerUnit}
+                            onChange={(e) => setFormData({ ...formData, quantityPerUnit: parseInt(e.target.value, 10) })}
+                            className="w-full rounded-lg border border-slate-600 bg-slate-800 px-4 py-2.5 text-white placeholder-slate-500 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                        />
+                        <p className="mt-1 text-xs text-slate-500">e.g., 24 for a case of 24 bottles</p>
                     </div>
 
                     {/* Cold Storage Checkbox */}

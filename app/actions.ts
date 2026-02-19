@@ -94,6 +94,7 @@ export async function createItem(formData: {
 export async function updateItem(itemId: string, formData: {
     name: string;
     sku: string;
+    size: string | null;
     stock: number;
     minThreshold: number;
     category: string;

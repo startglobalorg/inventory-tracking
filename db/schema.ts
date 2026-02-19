@@ -10,6 +10,7 @@ export const items = sqliteTable('items', {
     minThreshold: integer('min_threshold').notNull().default(10),
     category: text('category').notNull(),
     imageUrl: text('image_url'),
+    size: text('size'),
 
     // New fields for batch updates
     quantityPerUnit: integer('quantity_per_unit').default(1),
