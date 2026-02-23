@@ -13,7 +13,6 @@ import {
 
 interface FulfillmentDashboardProps {
     initialOrders: OrderWithDetails[];
-    storageType: 'normal' | 'cold';
 }
 
 function formatTimeAgo(date: Date): string {
@@ -61,15 +60,15 @@ function OrderCard({
     };
 
     const statusColors = {
-        new: 'bg-yellow-900/50 border-yellow-600',
-        in_progress: 'bg-blue-900/50 border-blue-600',
-        done: 'bg-green-900/50 border-green-700',
+        new: 'bg-jayouh/10 border-jayouh/50',
+        in_progress: 'bg-esbee/20 border-esbee',
+        done: 'bg-grape border-grape',
     };
 
     const statusBadgeColors = {
-        new: 'bg-yellow-600',
-        in_progress: 'bg-blue-600',
-        done: 'bg-green-600',
+        new: 'bg-jayouh/20 text-jayouh',
+        in_progress: 'bg-esbee/30 text-cerise',
+        done: 'bg-neutral-700 text-white',
     };
 
     const statusLabels = {
@@ -91,13 +90,13 @@ function OrderCard({
                     <h3 className="font-bold text-white">{order.locationName}</h3>
                     <p className="text-xs text-slate-400">{formatTimeAgo(order.createdAt)}</p>
                 </div>
-                <span className={`rounded-full px-2 py-1 text-xs font-bold text-white ${statusBadgeColors[order.status]}`}>
+                <span className={`rounded-full px-2 py-1 text-xs font-bold ${statusBadgeColors[order.status]}`}>
                     {statusLabels[order.status]}
                 </span>
             </div>
 
             {/* Items */}
-            <div className="mb-4 rounded-lg bg-slate-900/50 p-3">
+            <div className="mb-4 rounded-lg bg-night/50 p-3">
                 <ul className="space-y-1">
                     {order.items.map(item => (
                         <li key={item.id} className="flex justify-between text-sm">
@@ -114,14 +113,14 @@ function OrderCard({
                     <>
                         <button
                             onClick={() => onPrepare(order.id)}
-                            className="flex-1 rounded-lg bg-purple-600 px-4 py-2 text-sm font-bold text-white hover:bg-purple-700 active:scale-95 transition-all"
+                            className="flex-1 rounded-lg bg-violet-accent px-4 py-2 text-sm font-bold text-white hover:bg-violet-accent/80 active:scale-95 transition-all"
                         >
                             Prepare Order
                         </button>
                         <button
                             onClick={() => handleStatusChange('in_progress')}
                             disabled={isUpdating}
-                            className="flex-1 rounded-lg bg-blue-600 px-4 py-2 text-sm font-bold text-white hover:bg-blue-700 disabled:opacity-50 active:scale-95 transition-all"
+                            className="flex-1 rounded-lg bg-cerise px-4 py-2 text-sm font-bold text-white hover:bg-jayouh disabled:opacity-50 active:scale-95 transition-all"
                         >
                             {isUpdating ? '...' : 'Start'}
                         </button>
@@ -131,7 +130,7 @@ function OrderCard({
                     <>
                         <button
                             onClick={() => onPrepare(order.id)}
-                            className="flex-1 rounded-lg bg-purple-600 px-4 py-2 text-sm font-bold text-white hover:bg-purple-700 active:scale-95 transition-all"
+                            className="flex-1 rounded-lg bg-violet-accent px-4 py-2 text-sm font-bold text-white hover:bg-violet-accent/80 active:scale-95 transition-all"
                         >
                             Prepare Order
                         </button>
@@ -148,7 +147,7 @@ function OrderCard({
                     <button
                         onClick={() => handleStatusChange('in_progress')}
                         disabled={isUpdating}
-                        className="flex-1 rounded-lg bg-slate-600 px-4 py-2 text-sm font-bold text-white hover:bg-slate-500 disabled:opacity-50 active:scale-95 transition-all"
+                        className="flex-1 rounded-lg bg-grape border border-esbee px-4 py-2 text-sm font-bold text-white hover:bg-esbee/30 disabled:opacity-50 active:scale-95 transition-all"
                     >
                         {isUpdating ? '...' : 'Revert to In Progress'}
                     </button>
@@ -158,7 +157,7 @@ function OrderCard({
     );
 }
 
-export function FulfillmentDashboard({ initialOrders, storageType }: FulfillmentDashboardProps) {
+export function FulfillmentDashboard({ initialOrders }: FulfillmentDashboardProps) {
     const router = useRouter();
     const [orders, setOrders] = useState<OrderWithDetails[]>(initialOrders);
     const [viewMode, setViewMode] = useState<'kanban' | 'list'>('kanban');
@@ -203,20 +202,19 @@ export function FulfillmentDashboard({ initialOrders, storageType }: Fulfillment
     // Refresh orders periodically
     useEffect(() => {
         const interval = setInterval(async () => {
-            const result = await getOrders('all', storageType);
+            const result = await getOrders('all');
             if (result.success && result.data) {
                 setOrders(result.data);
             }
         }, 10000); // Refresh every 10 seconds
 
         return () => clearInterval(interval);
-    }, [storageType]);
+    }, []);
 
     const handleStatusChange = async (orderId: string, newStatus: OrderStatus) => {
         const result = await updateOrderStatus(orderId, newStatus);
         if (result.success) {
-            // Refresh orders
-            const ordersResult = await getOrders('all', storageType);
+            const ordersResult = await getOrders('all');
             if (ordersResult.success && ordersResult.data) {
                 setOrders(ordersResult.data);
             }
@@ -242,35 +240,21 @@ export function FulfillmentDashboard({ initialOrders, storageType }: Fulfillment
     return (
         <div className="pb-8">
             {/* Header */}
-            <div className={`sticky top-0 z-10 border-b p-4 ${
-                storageType === 'cold'
-                    ? 'bg-cyan-950 border-cyan-700'
-                    : 'bg-slate-800 border-slate-700'
-            }`}>
+            <div className="sticky top-0 z-10 border-b p-4 bg-grape border-esbee">
                 <div className="container mx-auto">
                     <div className="flex items-center justify-between gap-4">
                         <div>
-                            <h1 className="text-xl font-bold text-white">
-                                {storageType === 'cold' ? 'Cold Storage Fulfillment ❄️' : 'Normal Warehouse'}
-                            </h1>
+                            <h1 className="text-xl font-bold text-white">Order Fulfillment</h1>
                             <p className="text-sm text-slate-400">
                                 {newOrders.length} new, {inProgressOrders.length} in progress
                             </p>
                         </div>
-                        <div className="flex gap-2">
-                            <Link
-                                href={storageType === 'cold' ? '/orders' : '/orders/cold-storage'}
-                                className="rounded-lg bg-slate-700 px-4 py-2 text-sm font-medium text-white hover:bg-slate-600"
-                            >
-                                {storageType === 'cold' ? 'Normal Warehouse' : 'Cold Storage ❄️'}
-                            </Link>
-                            <Link
-                                href="/"
-                                className="rounded-lg bg-slate-700 px-4 py-2 text-sm font-medium text-white hover:bg-slate-600"
-                            >
-                                Inventory
-                            </Link>
-                        </div>
+                        <Link
+                            href="/"
+                            className="rounded-lg bg-grape border border-esbee px-4 py-2 text-sm font-medium text-white hover:bg-esbee/30"
+                        >
+                            Inventory
+                        </Link>
                     </div>
                 </div>
             </div>
@@ -278,12 +262,12 @@ export function FulfillmentDashboard({ initialOrders, storageType }: Fulfillment
             {/* View Toggle */}
             <div className="container mx-auto p-4">
                 <div className="flex items-center justify-between mb-4">
-                    <div className="flex rounded-lg overflow-hidden border border-slate-700">
+                    <div className="flex rounded-lg overflow-hidden border border-esbee">
                         <button
                             onClick={() => setViewMode('list')}
                             className={`px-4 py-2 text-sm font-medium ${viewMode === 'list'
-                                ? 'bg-blue-600 text-white'
-                                : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
+                                ? 'bg-cerise text-white'
+                                : 'bg-grape text-slate-300 hover:bg-esbee/30'
                                 }`}
                         >
                             List View
@@ -291,8 +275,8 @@ export function FulfillmentDashboard({ initialOrders, storageType }: Fulfillment
                         <button
                             onClick={() => setViewMode('kanban')}
                             className={`px-4 py-2 text-sm font-medium ${viewMode === 'kanban'
-                                ? 'bg-blue-600 text-white'
-                                : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
+                                ? 'bg-cerise text-white'
+                                : 'bg-grape text-slate-300 hover:bg-esbee/30'
                                 }`}
                         >
                             Kanban View
@@ -303,14 +287,14 @@ export function FulfillmentDashboard({ initialOrders, storageType }: Fulfillment
                             type="checkbox"
                             checked={showDone}
                             onChange={(e) => setShowDone(e.target.checked)}
-                            className="rounded border-slate-600 bg-slate-800 text-blue-600 focus:ring-blue-500"
+                            className="rounded border-esbee bg-grape text-cerise focus:ring-cerise"
                         />
                         Show completed
                     </label>
                 </div>
 
                 {orders.length === 0 ? (
-                    <div className="rounded-xl bg-slate-800 border border-slate-700 p-8 text-center">
+                    <div className="rounded-xl bg-grape border border-esbee p-8 text-center">
                         <div className="text-4xl mb-4">&#x1F4E6;</div>
                         <h2 className="text-xl font-bold text-white mb-2">No Orders Yet</h2>
                         <p className="text-slate-400">
@@ -321,7 +305,7 @@ export function FulfillmentDashboard({ initialOrders, storageType }: Fulfillment
                     /* List View */
                     <div className="space-y-4">
                         {activeOrders.length === 0 && !showDone ? (
-                            <div className="rounded-xl bg-slate-800 border border-slate-700 p-8 text-center">
+                            <div className="rounded-xl bg-grape border border-esbee p-8 text-center">
                                 <div className="text-4xl mb-4">&#x2705;</div>
                                 <h2 className="text-xl font-bold text-white mb-2">All Caught Up!</h2>
                                 <p className="text-slate-400">
@@ -340,7 +324,7 @@ export function FulfillmentDashboard({ initialOrders, storageType }: Fulfillment
                                 ))}
                                 {showDone && doneOrders.length > 0 && (
                                     <>
-                                        <div className="border-t border-slate-700 pt-4 mt-6">
+                                        <div className="border-t border-esbee pt-4 mt-6">
                                             <h2 className="text-sm font-bold text-slate-500 uppercase tracking-wide mb-4">
                                                 Completed ({doneOrders.length})
                                             </h2>
@@ -363,17 +347,17 @@ export function FulfillmentDashboard({ initialOrders, storageType }: Fulfillment
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                         {/* New Column */}
                         <div
-                            className={`rounded-xl bg-slate-800/50 border p-4 transition-colors ${
+                            className={`rounded-xl bg-grape/50 border p-4 transition-colors ${
                                 dragOverColumn === 'new'
-                                    ? 'border-yellow-500 border-2 bg-yellow-500/10'
-                                    : 'border-slate-700'
+                                    ? 'border-jayouh border-2 bg-jayouh/10'
+                                    : 'border-esbee'
                             }`}
                             onDrop={(e) => handleDrop(e, 'new')}
                             onDragOver={(e) => handleDragOver(e, 'new')}
                             onDragLeave={handleDragLeave}
                         >
-                            <h2 className="text-sm font-bold text-yellow-500 uppercase tracking-wide mb-4 flex items-center gap-2">
-                                <span className="w-3 h-3 rounded-full bg-yellow-500"></span>
+                            <h2 className="text-sm font-bold text-jayouh uppercase tracking-wide mb-4 flex items-center gap-2">
+                                <span className="w-3 h-3 rounded-full bg-jayouh"></span>
                                 New ({newOrders.length})
                             </h2>
                             <div className="space-y-3">
@@ -398,17 +382,17 @@ export function FulfillmentDashboard({ initialOrders, storageType }: Fulfillment
 
                         {/* In Progress Column */}
                         <div
-                            className={`rounded-xl bg-slate-800/50 border p-4 transition-colors ${
+                            className={`rounded-xl bg-grape/50 border p-4 transition-colors ${
                                 dragOverColumn === 'in_progress'
-                                    ? 'border-blue-500 border-2 bg-blue-500/10'
-                                    : 'border-slate-700'
+                                    ? 'border-esbee border-2 bg-esbee/10'
+                                    : 'border-esbee'
                             }`}
                             onDrop={(e) => handleDrop(e, 'in_progress')}
                             onDragOver={(e) => handleDragOver(e, 'in_progress')}
                             onDragLeave={handleDragLeave}
                         >
-                            <h2 className="text-sm font-bold text-blue-500 uppercase tracking-wide mb-4 flex items-center gap-2">
-                                <span className="w-3 h-3 rounded-full bg-blue-500"></span>
+                            <h2 className="text-sm font-bold text-cerise uppercase tracking-wide mb-4 flex items-center gap-2">
+                                <span className="w-3 h-3 rounded-full bg-cerise"></span>
                                 In Progress ({inProgressOrders.length})
                             </h2>
                             <div className="space-y-3">
@@ -434,10 +418,10 @@ export function FulfillmentDashboard({ initialOrders, storageType }: Fulfillment
                         {/* Done Column */}
                         {showDone && (
                             <div
-                                className={`rounded-xl bg-slate-800/50 border p-4 transition-colors ${
+                                className={`rounded-xl bg-grape/50 border p-4 transition-colors ${
                                     dragOverColumn === 'done'
                                         ? 'border-green-500 border-2 bg-green-500/10'
-                                        : 'border-slate-700'
+                                        : 'border-esbee'
                                 }`}
                                 onDrop={(e) => handleDrop(e, 'done')}
                                 onDragOver={(e) => handleDragOver(e, 'done')}

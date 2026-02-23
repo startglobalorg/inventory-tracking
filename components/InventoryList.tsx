@@ -54,9 +54,9 @@ export function InventoryList({ initialItems, mode = 'consume' }: { initialItems
     }, [filteredItems]);
 
     return (
-        <div className="min-h-screen bg-slate-950">
+        <div className="min-h-screen bg-night">
             {/* Sticky Header */}
-            <header className="sticky top-0 z-40 border-b border-slate-800 bg-slate-900/95 backdrop-blur-sm">
+            <header className="sticky top-0 z-40 border-b border-esbee bg-night/95 backdrop-blur-sm">
                 <BrandHeader
                     title={mode === 'restock' ? 'Supplier Restock' : 'Inventory Management'}
                     subtitle="☕ Coffee Point"
@@ -69,31 +69,31 @@ export function InventoryList({ initialItems, mode = 'consume' }: { initialItems
                                 <>
                                     <Link
                                         href="/add-item"
-                                        className="rounded-lg bg-blue-600 px-3 sm:px-4 py-2 text-xs sm:text-sm font-semibold text-white transition-all hover:bg-blue-700"
+                                        className="rounded-lg bg-cerise px-3 sm:px-4 py-2 text-xs sm:text-sm font-semibold text-white transition-all hover:bg-jayouh"
                                     >
                                         + Add
                                     </Link>
                                     <Link
                                         href="/orders"
-                                        className="rounded-lg bg-slate-800 px-3 sm:px-4 py-2 text-xs sm:text-sm font-semibold text-purple-400 border border-slate-700 hover:border-purple-500 hover:text-purple-300"
+                                        className="rounded-lg bg-grape px-3 sm:px-4 py-2 text-xs sm:text-sm font-semibold text-violet-accent border border-esbee hover:border-cerise hover:text-white"
                                     >
                                         Normal Orders
                                     </Link>
                                     <Link
                                         href="/orders/cold-storage"
-                                        className="rounded-lg bg-slate-800 px-3 sm:px-4 py-2 text-xs sm:text-sm font-semibold text-cyan-400 border border-slate-700 hover:border-cyan-500 hover:text-cyan-300"
+                                        className="rounded-lg bg-grape px-3 sm:px-4 py-2 text-xs sm:text-sm font-semibold text-cerise border border-esbee hover:border-cerise hover:text-white"
                                     >
                                         Cold Orders ❄️
                                     </Link>
                                     <Link
                                         href="/history"
-                                        className="rounded-lg bg-slate-800 px-3 sm:px-4 py-2 text-xs sm:text-sm font-semibold text-slate-400 border border-slate-700 hover:border-slate-500 hover:text-white"
+                                        className="rounded-lg bg-grape px-3 sm:px-4 py-2 text-xs sm:text-sm font-semibold text-slate-400 border border-esbee hover:border-cerise hover:text-white"
                                     >
                                         History
                                     </Link>
                                     <Link
                                         href="/restock"
-                                        className="rounded-lg bg-slate-800 px-3 sm:px-4 py-2 text-xs sm:text-sm font-semibold text-blue-400 border border-slate-700 hover:border-blue-500 hover:text-blue-300"
+                                        className="rounded-lg bg-grape px-3 sm:px-4 py-2 text-xs sm:text-sm font-semibold text-cerise border border-esbee hover:border-cerise hover:text-white"
                                     >
                                         Restock
                                     </Link>
@@ -102,7 +102,7 @@ export function InventoryList({ initialItems, mode = 'consume' }: { initialItems
                             {mode === 'restock' && (
                                 <Link
                                     href="/"
-                                    className="rounded-lg bg-slate-800 px-3 sm:px-4 py-2 text-xs sm:text-sm font-semibold text-slate-400 border border-slate-700 hover:border-slate-500 hover:text-white"
+                                    className="rounded-lg bg-grape px-3 sm:px-4 py-2 text-xs sm:text-sm font-semibold text-slate-400 border border-esbee hover:border-cerise hover:text-white"
                                 >
                                     ← Back
                                 </Link>
@@ -119,8 +119,8 @@ export function InventoryList({ initialItems, mode = 'consume' }: { initialItems
                         <button
                             onClick={() => setViewType('normal')}
                             className={`flex-1 rounded-lg px-4 py-2.5 text-sm font-semibold transition-all ${viewType === 'normal'
-                                ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/30'
-                                : 'bg-slate-800 text-slate-400 hover:bg-slate-700 hover:text-white border border-slate-700'
+                                ? 'bg-cerise text-white shadow-lg shadow-cerise/30'
+                                : 'bg-grape text-slate-400 hover:bg-esbee/30 hover:text-white border border-esbee'
                                 }`}
                         >
                             Normal Storage
@@ -128,8 +128,8 @@ export function InventoryList({ initialItems, mode = 'consume' }: { initialItems
                         <button
                             onClick={() => setViewType('cold')}
                             className={`flex-1 rounded-lg px-4 py-2.5 text-sm font-semibold transition-all ${viewType === 'cold'
-                                ? 'bg-cyan-600 text-white shadow-lg shadow-cyan-500/30'
-                                : 'bg-slate-800 text-slate-400 hover:bg-slate-700 hover:text-white border border-slate-700'
+                                ? 'bg-esbee text-white shadow-lg shadow-esbee/30'
+                                : 'bg-grape text-slate-400 hover:bg-esbee/30 hover:text-white border border-esbee'
                                 }`}
                         >
                             Cold Storage ❄️
@@ -143,7 +143,7 @@ export function InventoryList({ initialItems, mode = 'consume' }: { initialItems
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
                             placeholder="Search by name, SKU, or category..."
-                            className="w-full rounded-lg border-2 border-slate-700 bg-slate-800 px-4 py-3 pl-12 text-white placeholder-slate-500 transition-all focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                            className="w-full rounded-lg border-2 border-esbee bg-grape px-4 py-3 pl-12 text-white placeholder-slate-500 transition-all focus:border-cerise focus:outline-none focus:ring-2 focus:ring-cerise/20"
                         />
                         <svg
                             className="absolute left-4 top-3.5 h-5 w-5 text-slate-400"
@@ -161,7 +161,7 @@ export function InventoryList({ initialItems, mode = 'consume' }: { initialItems
                         {searchQuery && (
                             <button
                                 onClick={() => setSearchQuery('')}
-                                className="absolute right-3 top-3 rounded-full p-1 text-slate-400 hover:bg-slate-700 hover:text-white"
+                                className="absolute right-3 top-3 rounded-full p-1 text-slate-400 hover:bg-grape hover:text-white"
                             >
                                 <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path
@@ -178,28 +178,28 @@ export function InventoryList({ initialItems, mode = 'consume' }: { initialItems
             </header>
 
             {/* Stats Dashboard */}
-            <div className="border-b border-slate-800 bg-slate-900">
+            <div className="border-b border-esbee bg-night">
                 <div className="container mx-auto px-4 py-3 sm:py-4">
                     <div className="grid grid-cols-2 gap-2 sm:gap-3 md:grid-cols-4">
-                        <div className="rounded-lg bg-slate-800 p-2 sm:p-3">
+                        <div className="rounded-lg bg-grape p-2 sm:p-3">
                             <p className="text-xs font-medium uppercase tracking-wide text-slate-400">
                                 Total Items
                             </p>
                             <p className="mt-1 text-xl sm:text-2xl font-black text-white">{stats.totalItems}</p>
                         </div>
-                        <div className="rounded-lg bg-slate-800 p-2 sm:p-3">
+                        <div className="rounded-lg bg-grape p-2 sm:p-3">
                             <p className="text-xs font-medium uppercase tracking-wide text-slate-400">
                                 Low Stock
                             </p>
                             <p className="mt-1 text-xl sm:text-2xl font-black text-orange-400">{stats.lowStock}</p>
                         </div>
-                        <div className="rounded-lg bg-slate-800 p-2 sm:p-3">
+                        <div className="rounded-lg bg-grape p-2 sm:p-3">
                             <p className="text-xs font-medium uppercase tracking-wide text-slate-400">
                                 Categories
                             </p>
                             <p className="mt-1 text-xl sm:text-2xl font-black text-white">{stats.categories}</p>
                         </div>
-                        <div className="rounded-lg bg-slate-800 p-2 sm:p-3">
+                        <div className="rounded-lg bg-grape p-2 sm:p-3">
                             <p className="text-xs font-medium uppercase tracking-wide text-slate-400">
                                 Total Stock
                             </p>
@@ -212,7 +212,7 @@ export function InventoryList({ initialItems, mode = 'consume' }: { initialItems
             {/* Main Content */}
             <main className="container mx-auto px-4 py-4 sm:py-6 pb-24 sm:pb-28">
                 {filteredItems.length === 0 ? (
-                    <div className="rounded-xl bg-slate-900 p-8 sm:p-12 text-center">
+                    <div className="rounded-xl bg-night p-8 sm:p-12 text-center">
                         <p className="text-lg sm:text-xl font-bold text-white">
                             {searchQuery ? `No items found matching "${searchQuery}"` : 'No items in inventory'}
                         </p>
@@ -222,7 +222,7 @@ export function InventoryList({ initialItems, mode = 'consume' }: { initialItems
                         {searchQuery && (
                             <button
                                 onClick={() => setSearchQuery('')}
-                                className="mt-4 rounded-lg bg-blue-600 px-6 py-2 font-medium text-white hover:bg-blue-700"
+                                className="mt-4 rounded-lg bg-cerise px-6 py-2 font-medium text-white hover:bg-jayouh"
                             >
                                 Clear Search
                             </button>

@@ -17,7 +17,7 @@ export default async function ItemPage({ params }: { params: Promise<{ id: strin
     }
 
     return (
-        <div className="min-h-screen bg-slate-950">
+        <div className="min-h-screen bg-night">
             <div className="container mx-auto px-4 py-6 sm:py-8 max-w-3xl">
                 <EditItemForm item={item[0]} />
             </div>

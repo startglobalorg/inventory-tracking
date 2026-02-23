@@ -35,7 +35,7 @@ export function EditItemForm({ item }: { item: Item }) {
 
             if (result.success) {
                 showToast('Item updated successfully!', 'success');
-                router.refresh();
+                router.push('/');
             } else {
                 showToast(result.error || 'Failed to update item', 'error');
             }
@@ -85,7 +85,7 @@ export function EditItemForm({ item }: { item: Item }) {
 
             {/* Form */}
             <form onSubmit={handleSubmit} className="space-y-6">
-                <div className="rounded-xl bg-slate-900 border border-slate-700 p-6 space-y-4">
+                <div className="rounded-xl bg-night border border-esbee p-6 space-y-4">
                     {/* Name */}
                     <div>
                         <label htmlFor="name" className="block text-sm font-medium text-slate-300 mb-2">
@@ -97,7 +97,7 @@ export function EditItemForm({ item }: { item: Item }) {
                             required
                             value={formData.name}
                             onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                            className="w-full rounded-lg border border-slate-600 bg-slate-800 px-4 py-2.5 text-white placeholder-slate-500 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                            className="w-full rounded-lg border border-esbee bg-grape px-4 py-2.5 text-white placeholder-slate-500 focus:border-cerise focus:outline-none focus:ring-2 focus:ring-cerise/20"
                         />
                     </div>
 
@@ -111,7 +111,7 @@ export function EditItemForm({ item }: { item: Item }) {
                             id="size"
                             value={formData.size}
                             onChange={(e) => setFormData({ ...formData, size: e.target.value })}
-                            className="w-full rounded-lg border border-slate-600 bg-slate-800 px-4 py-2.5 text-white placeholder-slate-500 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                            className="w-full rounded-lg border border-esbee bg-grape px-4 py-2.5 text-white placeholder-slate-500 focus:border-cerise focus:outline-none focus:ring-2 focus:ring-cerise/20"
                             placeholder="e.g., 500ml, 100g"
                         />
                     </div>
@@ -129,7 +129,7 @@ export function EditItemForm({ item }: { item: Item }) {
                             required
                             value={formData.category}
                             onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                            className="w-full rounded-lg border border-slate-600 bg-slate-800 px-4 py-2.5 text-white placeholder-slate-500 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                            className="w-full rounded-lg border border-esbee bg-grape px-4 py-2.5 text-white placeholder-slate-500 focus:border-cerise focus:outline-none focus:ring-2 focus:ring-cerise/20"
                         />
                     </div>
 
@@ -146,7 +146,7 @@ export function EditItemForm({ item }: { item: Item }) {
                                 min="0"
                                 value={formData.stock}
                                 onChange={(e) => setFormData({ ...formData, stock: parseInt(e.target.value, 10) })}
-                                className="w-full rounded-lg border border-slate-600 bg-slate-800 px-4 py-2.5 text-white placeholder-slate-500 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                                className="w-full rounded-lg border border-esbee bg-grape px-4 py-2.5 text-white placeholder-slate-500 focus:border-cerise focus:outline-none focus:ring-2 focus:ring-cerise/20"
                             />
                         </div>
 
@@ -161,7 +161,7 @@ export function EditItemForm({ item }: { item: Item }) {
                                 min="0"
                                 value={formData.minThreshold}
                                 onChange={(e) => setFormData({ ...formData, minThreshold: parseInt(e.target.value, 10) })}
-                                className="w-full rounded-lg border border-slate-600 bg-slate-800 px-4 py-2.5 text-white placeholder-slate-500 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                                className="w-full rounded-lg border border-esbee bg-grape px-4 py-2.5 text-white placeholder-slate-500 focus:border-cerise focus:outline-none focus:ring-2 focus:ring-cerise/20"
                             />
                         </div>
                     </div>
@@ -178,7 +178,7 @@ export function EditItemForm({ item }: { item: Item }) {
                             min="1"
                             value={formData.quantityPerUnit}
                             onChange={(e) => setFormData({ ...formData, quantityPerUnit: parseInt(e.target.value, 10) })}
-                            className="w-full rounded-lg border border-slate-600 bg-slate-800 px-4 py-2.5 text-white placeholder-slate-500 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                            className="w-full rounded-lg border border-esbee bg-grape px-4 py-2.5 text-white placeholder-slate-500 focus:border-cerise focus:outline-none focus:ring-2 focus:ring-cerise/20"
                         />
                         <p className="mt-1 text-xs text-slate-500">e.g., 24 for a case of 24 bottles</p>
                     </div>
@@ -191,7 +191,7 @@ export function EditItemForm({ item }: { item: Item }) {
                                 id="coldStorage"
                                 checked={formData.coldStorage}
                                 onChange={(e) => setFormData({ ...formData, coldStorage: e.target.checked })}
-                                className="w-5 h-5 rounded bg-slate-800 border-slate-600 text-cyan-600 focus:ring-2 focus:ring-cyan-500"
+                                className="w-5 h-5 rounded bg-grape border-esbee text-cyan-600 focus:ring-2 focus:ring-cyan-500"
                             />
                             <span className="text-sm font-medium text-slate-300">
                                 Cold Storage Item ❄️
@@ -216,7 +216,7 @@ export function EditItemForm({ item }: { item: Item }) {
 
                     <Link
                         href="/"
-                        className="w-full sm:w-auto text-center rounded-lg border border-slate-600 bg-slate-800 px-6 py-3 font-semibold text-white hover:bg-slate-700 transition-colors"
+                        className="w-full sm:w-auto text-center rounded-lg border border-esbee bg-grape px-6 py-3 font-semibold text-white hover:bg-esbee/30 transition-colors"
                     >
                         Cancel
                     </Link>
@@ -224,7 +224,7 @@ export function EditItemForm({ item }: { item: Item }) {
                     <button
                         type="submit"
                         disabled={isSubmitting || isDeleting}
-                        className="w-full sm:w-auto rounded-lg bg-blue-600 px-6 py-3 font-semibold text-white hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                        className="w-full sm:w-auto rounded-lg bg-cerise px-6 py-3 font-semibold text-white hover:bg-jayouh disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                     >
                         {isSubmitting ? 'Saving...' : 'Save Changes'}
                     </button>
@@ -234,7 +234,7 @@ export function EditItemForm({ item }: { item: Item }) {
             {/* Delete Confirmation Modal */}
             {showDeleteConfirm && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80">
-                    <div className="w-full max-w-md rounded-xl bg-slate-900 border border-slate-700 p-6">
+                    <div className="w-full max-w-md rounded-xl bg-grape border border-esbee p-6">
                         <h3 className="text-xl font-bold text-white mb-2">Delete Item?</h3>
                         <p className="text-slate-400 mb-6">
                             Are you sure you want to delete <span className="font-semibold text-white">{item.name}</span>?
@@ -244,7 +244,7 @@ export function EditItemForm({ item }: { item: Item }) {
                             <button
                                 onClick={() => setShowDeleteConfirm(false)}
                                 disabled={isDeleting}
-                                className="flex-1 rounded-lg border border-slate-600 bg-slate-800 px-4 py-2.5 font-semibold text-white hover:bg-slate-700 disabled:opacity-50 transition-colors"
+                                className="flex-1 rounded-lg border border-esbee bg-grape px-4 py-2.5 font-semibold text-white hover:bg-esbee/30 disabled:opacity-50 transition-colors"
                             >
                                 Cancel
                             </button>

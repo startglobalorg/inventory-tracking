@@ -148,7 +148,7 @@ export default function AddItemPage() {
     };
 
     return (
-        <div className="min-h-screen bg-slate-950">
+        <div className="min-h-screen bg-night">
             <div className="container mx-auto px-4 py-8 max-w-2xl">
                 {/* Header */}
                 <div className="mb-6">
@@ -173,7 +173,7 @@ export default function AddItemPage() {
                         </div>
                     )}
 
-                    <div className="bg-slate-900 rounded-xl p-6 space-y-4">
+                    <div className="bg-night rounded-xl p-6 space-y-4">
                         {/* Name */}
                         <div>
                             <label htmlFor="name" className="block text-sm font-semibold text-white mb-2">
@@ -185,7 +185,7 @@ export default function AddItemPage() {
                                 required
                                 value={formData.name}
                                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                                className="w-full rounded-lg bg-slate-800 border border-slate-700 text-white px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                className="w-full rounded-lg bg-grape border border-esbee text-white px-4 py-3 focus:ring-2 focus:ring-cerise focus:border-transparent"
                                 placeholder="e.g., Rivella Red (500ml)"
                             />
                             <p className="mt-1 text-xs text-slate-500">Include variant/flavor for unique SKU (e.g., &quot;Red&quot; vs &quot;Blue&quot;)</p>
@@ -204,7 +204,7 @@ export default function AddItemPage() {
                                         required
                                         value={formData.category}
                                         onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                                        className="w-full rounded-lg bg-slate-800 border border-slate-700 text-white px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                        className="w-full rounded-lg bg-grape border border-esbee text-white px-4 py-3 focus:ring-2 focus:ring-cerise focus:border-transparent"
                                         placeholder="Enter custom category"
                                         autoFocus
                                     />
@@ -214,7 +214,7 @@ export default function AddItemPage() {
                                             setShowCustomCategory(false);
                                             setFormData({ ...formData, category: '' });
                                         }}
-                                        className="text-xs text-blue-400 hover:text-blue-300"
+                                        className="text-xs text-cerise hover:text-jayouh"
                                     >
                                         ← Back to predefined categories
                                     </button>
@@ -233,7 +233,7 @@ export default function AddItemPage() {
                                             setFormData({ ...formData, category: value });
                                         }
                                     }}
-                                    className="w-full rounded-lg bg-slate-800 border border-slate-700 text-white px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                    className="w-full rounded-lg bg-grape border border-esbee text-white px-4 py-3 focus:ring-2 focus:ring-cerise focus:border-transparent"
                                 >
                                     <option value="">Select a category</option>
                                     {CATEGORIES.map((cat) => (
@@ -241,7 +241,7 @@ export default function AddItemPage() {
                                             {cat}
                                         </option>
                                     ))}
-                                    <option value="custom" className="text-blue-400">
+                                    <option value="custom" className="text-cerise">
                                         + Add Custom Category
                                     </option>
                                 </select>
@@ -260,7 +260,7 @@ export default function AddItemPage() {
                                         required
                                         value={formData.brand}
                                         onChange={(e) => setFormData({ ...formData, brand: e.target.value })}
-                                        className="w-full rounded-lg bg-slate-800 border border-slate-700 text-white px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                        className="w-full rounded-lg bg-grape border border-esbee text-white px-4 py-3 focus:ring-2 focus:ring-cerise focus:border-transparent"
                                         placeholder="Enter custom brand"
                                         autoFocus
                                     />
@@ -270,7 +270,7 @@ export default function AddItemPage() {
                                             setShowCustomBrand(false);
                                             setFormData({ ...formData, brand: '' });
                                         }}
-                                        className="text-xs text-blue-400 hover:text-blue-300"
+                                        className="text-xs text-cerise hover:text-jayouh"
                                     >
                                         ← Back to brand list
                                     </button>
@@ -285,11 +285,11 @@ export default function AddItemPage() {
                                             setShowBrandDropdown(true);
                                         }}
                                         onFocus={() => setShowBrandDropdown(true)}
-                                        className="w-full rounded-lg bg-slate-800 border border-slate-700 text-white px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                        className="w-full rounded-lg bg-grape border border-esbee text-white px-4 py-3 focus:ring-2 focus:ring-cerise focus:border-transparent"
                                         placeholder="Search or select a brand"
                                     />
                                     {showBrandDropdown && (
-                                        <div className="absolute z-10 w-full mt-1 max-h-60 overflow-y-auto bg-slate-800 border border-slate-700 rounded-lg shadow-lg">
+                                        <div className="absolute z-10 w-full mt-1 max-h-60 overflow-y-auto bg-grape border border-esbee rounded-lg shadow-lg">
                                             {filteredBrands.length > 0 ? (
                                                 filteredBrands.map((brand) => (
                                                     <button
@@ -300,7 +300,7 @@ export default function AddItemPage() {
                                                             setBrandSearch(brand);
                                                             setShowBrandDropdown(false);
                                                         }}
-                                                        className="w-full text-left px-4 py-2 text-white hover:bg-slate-700 transition-colors"
+                                                        className="w-full text-left px-4 py-2 text-white hover:bg-esbee/30 transition-colors"
                                                     >
                                                         {brand}
                                                     </button>
@@ -315,7 +315,7 @@ export default function AddItemPage() {
                                                     setShowBrandDropdown(false);
                                                     setBrandSearch('');
                                                 }}
-                                                className="w-full text-left px-4 py-2 text-blue-400 hover:bg-slate-700 border-t border-slate-700"
+                                                className="w-full text-left px-4 py-2 text-cerise hover:bg-esbee/30 border-t border-esbee"
                                             >
                                                 + Add Custom Brand
                                             </button>
@@ -337,7 +337,7 @@ export default function AddItemPage() {
                                 min="1"
                                 value={formData.size}
                                 onChange={(e) => setFormData({ ...formData, size: e.target.value })}
-                                className="w-full rounded-lg bg-slate-800 border border-slate-700 text-white px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                className="w-full rounded-lg bg-grape border border-esbee text-white px-4 py-3 focus:ring-2 focus:ring-cerise focus:border-transparent"
                                 placeholder={isLiquidCategory ? "e.g., 500" : "e.g., 100"}
                             />
                             <p className="mt-1 text-xs text-slate-500">Enter size in {sizeLabel} ({sizeUnit})</p>
@@ -345,9 +345,9 @@ export default function AddItemPage() {
 
                         {/* Auto-generated SKU Display */}
                         {generatedSKU && (
-                            <div className="bg-slate-800 rounded-lg p-4 border border-slate-700">
+                            <div className="bg-grape rounded-lg p-4 border border-esbee">
                                 <p className="text-xs font-medium text-slate-400 mb-1">Auto-generated SKU:</p>
-                                <p className="text-sm font-mono font-bold text-green-400">{generatedSKU}</p>
+                                <p className="text-sm font-mono font-bold text-cerise">{generatedSKU}</p>
                             </div>
                         )}
 
@@ -364,7 +364,7 @@ export default function AddItemPage() {
                                     min="0"
                                     value={formData.stock}
                                     onChange={(e) => setFormData({ ...formData, stock: parseInt(e.target.value) })}
-                                    className="w-full rounded-lg bg-slate-800 border border-slate-700 text-white px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                    className="w-full rounded-lg bg-grape border border-esbee text-white px-4 py-3 focus:ring-2 focus:ring-cerise focus:border-transparent"
                                 />
                             </div>
                             <div>
@@ -375,7 +375,7 @@ export default function AddItemPage() {
                                             <svg className="w-4 h-4 text-slate-400 cursor-help" fill="currentColor" viewBox="0 0 20 20">
                                                 <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd" />
                                             </svg>
-                                            <span className="invisible group-hover:visible absolute left-6 top-1/2 -translate-y-1/2 w-64 bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-xs font-normal text-slate-300 shadow-xl z-10">
+                                            <span className="invisible group-hover:visible absolute left-6 top-1/2 -translate-y-1/2 w-64 bg-night border border-esbee rounded-lg px-3 py-2 text-xs font-normal text-slate-300 shadow-xl z-10">
                                                 When stock falls to or below this number, a Slack alert will be sent to notify the team about low stock.
                                             </span>
                                         </span>
@@ -388,7 +388,7 @@ export default function AddItemPage() {
                                     min="0"
                                     value={formData.minThreshold}
                                     onChange={(e) => setFormData({ ...formData, minThreshold: parseInt(e.target.value) })}
-                                    className="w-full rounded-lg bg-slate-800 border border-slate-700 text-white px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                    className="w-full rounded-lg bg-grape border border-esbee text-white px-4 py-3 focus:ring-2 focus:ring-cerise focus:border-transparent"
                                 />
                             </div>
                         </div>
@@ -405,7 +405,7 @@ export default function AddItemPage() {
                                 min="1"
                                 value={formData.quantityPerUnit}
                                 onChange={(e) => setFormData({ ...formData, quantityPerUnit: parseInt(e.target.value) })}
-                                className="w-full rounded-lg bg-slate-800 border border-slate-700 text-white px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                className="w-full rounded-lg bg-grape border border-esbee text-white px-4 py-3 focus:ring-2 focus:ring-cerise focus:border-transparent"
                             />
                             <p className="mt-1 text-xs text-slate-500">e.g., 24 for a case of 24 bottles</p>
                         </div>
@@ -418,7 +418,7 @@ export default function AddItemPage() {
                                     id="coldStorage"
                                     checked={formData.coldStorage}
                                     onChange={(e) => setFormData({ ...formData, coldStorage: e.target.checked })}
-                                    className="w-5 h-5 rounded bg-slate-800 border-slate-700 text-cyan-600 focus:ring-2 focus:ring-cyan-500"
+                                    className="w-5 h-5 rounded bg-grape border-esbee text-cyan-600 focus:ring-2 focus:ring-cyan-500"
                                 />
                                 <span className="text-sm font-semibold text-white">
                                     Cold Storage Item ❄️
@@ -432,14 +432,14 @@ export default function AddItemPage() {
                     <div className="flex gap-4">
                         <Link
                             href="/"
-                            className="flex-1 rounded-lg bg-slate-800 px-6 py-3 text-center font-semibold text-white transition-all hover:bg-slate-700 border border-slate-700"
+                            className="flex-1 rounded-lg bg-grape px-6 py-3 text-center font-semibold text-white transition-all hover:bg-esbee/30 border border-esbee"
                         >
                             Cancel
                         </Link>
                         <button
                             type="submit"
                             disabled={isSubmitting}
-                            className="flex-1 rounded-lg bg-blue-600 px-6 py-3 font-bold text-white transition-all hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
+                            className="flex-1 rounded-lg bg-cerise px-6 py-3 font-bold text-white transition-all hover:bg-jayouh disabled:cursor-not-allowed disabled:opacity-50"
                         >
                             {isSubmitting ? 'Creating...' : 'Create Item'}
                         </button>

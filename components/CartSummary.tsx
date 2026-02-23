@@ -82,10 +82,10 @@ export function CartSummary({ allItems }: { allItems: Item[] }) {
     return (
         <>
             {/* Floating Bar */}
-            <div className={`fixed bottom-0 left-0 z-40 w-full border-t p-3 sm:p-4 shadow-2xl safe-area-bottom ${linkedOrderId ? 'bg-purple-900 border-purple-700' : 'bg-slate-800 border-slate-700'}`}>
+            <div className={`fixed bottom-0 left-0 z-40 w-full border-t p-3 sm:p-4 shadow-2xl safe-area-bottom ${linkedOrderId ? 'bg-deep-space border-esbee' : 'bg-grape border-esbee'}`}>
                 <div className="container mx-auto flex items-center justify-between gap-2 sm:gap-4">
                     <div className="flex items-center gap-2 sm:gap-3">
-                        <div className={`flex h-9 w-9 sm:h-10 sm:w-10 items-center justify-center rounded-full font-bold text-white text-sm sm:text-base ${linkedOrderId ? 'bg-purple-600' : 'bg-blue-600'}`}>
+                        <div className={`flex h-9 w-9 sm:h-10 sm:w-10 items-center justify-center rounded-full font-bold text-white text-sm sm:text-base ${linkedOrderId ? 'bg-violet-accent' : 'bg-cerise'}`}>
                             {totalItems}
                         </div>
                         <div className="text-white">
@@ -109,7 +109,7 @@ export function CartSummary({ allItems }: { allItems: Item[] }) {
             {/* Review Modal / Sheet */}
             {isOpen && (
                 <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 backdrop-blur-sm p-4 sm:items-center" role="dialog" aria-modal="true" aria-label="Review order">
-                    <div className="w-full max-w-md rounded-2xl bg-slate-900 border border-slate-700 shadow-2xl animate-slide-up max-h-[80vh] flex flex-col">
+                    <div className="w-full max-w-md rounded-2xl bg-grape border border-esbee shadow-2xl animate-slide-up max-h-[80vh] flex flex-col">
                         <div className="p-6 flex flex-col h-full">
                             <div className="flex items-center justify-between mb-4">
                                 <div>
@@ -117,7 +117,7 @@ export function CartSummary({ allItems }: { allItems: Item[] }) {
                                         {linkedOrderId ? 'Fulfill Order' : 'Review Order'}
                                     </h2>
                                     {linkedOrderId && (
-                                        <p className="text-sm text-purple-400">
+                                        <p className="text-sm text-violet-accent">
                                             Linked to volunteer request
                                         </p>
                                     )}
@@ -138,7 +138,7 @@ export function CartSummary({ allItems }: { allItems: Item[] }) {
                                     const displayAmount = detail.amount > 0 ? `+${detail.amount}` : detail.amount;
 
                                     return (
-                                        <div key={detail.id} className="rounded-lg bg-slate-800 p-3 space-y-2">
+                                        <div key={detail.id} className="rounded-lg bg-night p-3 space-y-2">
                                             <div className="flex justify-between items-center">
                                                 <span className="font-medium text-white">{detail.name}</span>
                                                 <span className={`font-bold ${detail.amount > 0 ? 'text-green-400' : 'text-red-400'}`}>
@@ -203,7 +203,7 @@ export function CartSummary({ allItems }: { allItems: Item[] }) {
                                         id="name"
                                         value={userName}
                                         onChange={(e) => setUserName(e.target.value)}
-                                        className="w-full rounded-lg bg-slate-800 border-slate-700 text-white px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                        className="w-full rounded-lg bg-night border border-esbee text-white px-4 py-3 focus:ring-2 focus:ring-cerise focus:border-transparent"
                                         placeholder="e.g. John Doe"
                                         autoFocus
                                     />
@@ -220,7 +220,7 @@ export function CartSummary({ allItems }: { allItems: Item[] }) {
                                     <button
                                         type="submit"
                                         disabled={isSubmitting}
-                                        className={`flex-[2] rounded-lg text-white font-bold py-3 disabled:opacity-50 disabled:cursor-not-allowed ${linkedOrderId ? 'bg-purple-600 hover:bg-purple-700' : 'bg-green-600 hover:bg-green-700'}`}
+                                        className={`flex-[2] rounded-lg text-white font-bold py-3 disabled:opacity-50 disabled:cursor-not-allowed ${linkedOrderId ? 'bg-cerise hover:bg-jayouh' : 'bg-green-600 hover:bg-green-700'}`}
                                     >
                                         {isSubmitting ? 'Submitting...' : linkedOrderId ? 'Fulfill Order' : 'Confirm Order'}
                                     </button>

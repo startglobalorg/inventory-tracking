@@ -136,13 +136,10 @@ export async function submitVolunteerRequest(
                 throw new Error('Location not found');
             }
 
-            // Fetch all item details including coldStorage field
+            // Validate all item IDs exist
             const itemIds = validItems.map(([id]) => id);
             const existingItems = tx
-                .select({
-                    id: items.id,
-                    coldStorage: items.coldStorage,
-                })
+                .select({ id: items.id })
                 .from(items)
                 .where(inArray(items.id, itemIds))
                 .all();
@@ -158,104 +155,36 @@ export async function submitVolunteerRequest(
                 throw new Error('Some requested items no longer exist');
             }
 
-            // Create a map of itemId -> coldStorage status
-            const itemStorageMap = new Map(existingItems.map(i => [i.id, i.coldStorage]));
+            // Create a single order for all items
+            const newOrder = tx
+                .insert(orders)
+                .values({ locationId, status: 'new' })
+                .returning()
+                .all();
 
-            // Separate items by storage type
-            const normalItems: Array<[string, number]> = [];
-            const coldItems: Array<[string, number]> = [];
+            if (!newOrder || newOrder.length === 0) {
+                throw new Error('Failed to create order');
+            }
+
+            const orderId = newOrder[0].id;
 
             for (const [itemId, quantity] of validItems) {
-                const isColdStorage = itemStorageMap.get(itemId);
-                if (isColdStorage) {
-                    coldItems.push([itemId, quantity]);
-                } else {
-                    normalItems.push([itemId, quantity]);
-                }
+                tx.insert(orderItems).values({ orderId, itemId, quantity }).run();
             }
 
-            const orderIds: string[] = [];
-
-            // Create normal warehouse order if there are normal items
-            if (normalItems.length > 0) {
-                const normalOrder = tx
-                    .insert(orders)
-                    .values({
-                        locationId,
-                        status: 'new',
-                        storageType: 'normal',
-                    })
-                    .returning()
-                    .all();
-
-                if (!normalOrder || normalOrder.length === 0) {
-                    throw new Error('Failed to create normal order');
-                }
-
-                const normalOrderId = normalOrder[0].id;
-                orderIds.push(normalOrderId);
-
-                // Create order items for normal storage
-                for (const [itemId, quantity] of normalItems) {
-                    tx.insert(orderItems).values({
-                        orderId: normalOrderId,
-                        itemId,
-                        quantity,
-                    }).run();
-                }
-            }
-
-            // Create cold storage order if there are cold items
-            if (coldItems.length > 0) {
-                const coldOrder = tx
-                    .insert(orders)
-                    .values({
-                        locationId,
-                        status: 'new',
-                        storageType: 'cold',
-                    })
-                    .returning()
-                    .all();
-
-                if (!coldOrder || coldOrder.length === 0) {
-                    throw new Error('Failed to create cold order');
-                }
-
-                const coldOrderId = coldOrder[0].id;
-                orderIds.push(coldOrderId);
-
-                // Create order items for cold storage
-                for (const [itemId, quantity] of coldItems) {
-                    tx.insert(orderItems).values({
-                        orderId: coldOrderId,
-                        itemId,
-                        quantity,
-                    }).run();
-                }
-            }
-
-            return { orderIds, normalCount: normalItems.length, coldCount: coldItems.length };
+            return { orderId };
         });
 
         revalidatePath('/orders');
-        revalidatePath('/orders/cold-storage');
 
-        let message = 'Order submitted successfully';
-        if (result.normalCount > 0 && result.coldCount > 0) {
-            message = `Order split: ${result.normalCount} normal items, ${result.coldCount} cold storage items`;
-        }
-
-        return { success: true, orderIds: result.orderIds, message };
+        return { success: true, orderIds: [result.orderId], message: 'Order submitted successfully' };
     } catch (error) {
         console.error('Error submitting volunteer request:', error);
         return { success: false, error: error instanceof Error ? error.message : 'Failed to submit request' };
     }
 }
 
-export async function getOrders(
-    statusFilter?: OrderStatus | 'all',
-    storageTypeFilter?: 'normal' | 'cold' | 'all'
-) {
+export async function getOrders(statusFilter?: OrderStatus | 'all') {
     try {
         // Fetch orders with location names via JOIN
         const allOrders = await db
@@ -264,7 +193,6 @@ export async function getOrders(
                 locationId: orders.locationId,
                 locationName: locations.name,
                 status: orders.status,
-                storageType: orders.storageType,
                 createdAt: orders.createdAt,
                 completedAt: orders.completedAt,
             })
@@ -292,19 +220,14 @@ export async function getOrders(
             orderItemsByOrderId.set(oi.orderId, existing);
         }
 
-        // Build response with filtering
+        // Build response with optional status filtering
         const ordersWithDetails: OrderWithDetails[] = allOrders
-            .filter(order => {
-                const statusMatch = statusFilter === 'all' || !statusFilter || order.status === statusFilter;
-                const storageMatch = !storageTypeFilter || storageTypeFilter === 'all' || order.storageType === storageTypeFilter;
-                return statusMatch && storageMatch;
-            })
+            .filter(order => statusFilter === 'all' || !statusFilter || order.status === statusFilter)
             .map(order => ({
                 id: order.id,
                 locationId: order.locationId,
                 locationName: order.locationName || 'Unknown',
                 status: order.status as OrderStatus,
-                storageType: order.storageType as 'normal' | 'cold',
                 createdAt: order.createdAt,
                 completedAt: order.completedAt,
                 items: (orderItemsByOrderId.get(order.id) || []).map(oi => ({

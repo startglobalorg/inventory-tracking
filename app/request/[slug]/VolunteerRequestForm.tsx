@@ -138,11 +138,11 @@ export function VolunteerRequestForm({ location, availableItems }: VolunteerRequ
                     title="Coffee Point Request"
                     subtitle={location.name}
                 />
-                <div className="bg-slate-800 border-b border-slate-700 px-4 py-2">
+                <div className="bg-grape border-b border-esbee px-4 py-2">
                     <div className="mx-auto max-w-lg flex items-center justify-end">
                         <Link
                             href={`/request/${location.slug}/history`}
-                            className="rounded-lg bg-slate-700 px-3 py-2 text-xs font-semibold text-slate-300 hover:bg-slate-600 hover:text-white transition-all"
+                            className="rounded-lg bg-grape border border-esbee px-3 py-2 text-xs font-semibold text-slate-300 hover:bg-esbee/30 hover:text-white transition-all"
                         >
                             History
                         </Link>
@@ -159,7 +159,7 @@ export function VolunteerRequestForm({ location, availableItems }: VolunteerRequ
                 )}
 
                 {availableItems.length === 0 ? (
-                    <div className="rounded-xl bg-slate-800 border border-slate-700 p-8 text-center">
+                    <div className="rounded-xl bg-grape border border-esbee p-8 text-center">
                         <p className="text-slate-400">
                             No items currently available. Please check back later.
                         </p>
@@ -181,9 +181,9 @@ export function VolunteerRequestForm({ location, availableItems }: VolunteerRequ
                                         return (
                                             <div
                                                 key={item.id}
-                                                className={`rounded-xl bg-slate-800 border p-4 transition-all ${qty > 0
-                                                    ? 'border-blue-500 ring-1 ring-blue-500/50'
-                                                    : 'border-slate-700'
+                                                className={`rounded-xl bg-grape border p-4 transition-all ${qty > 0
+                                                    ? 'border-cerise ring-1 ring-cerise/50'
+                                                    : 'border-esbee'
                                                     }`}
                                             >
                                                 <div className="space-y-3">
@@ -197,7 +197,7 @@ export function VolunteerRequestForm({ location, availableItems }: VolunteerRequ
                                                             </p>
                                                         </div>
                                                         {qty > 0 && (
-                                                            <span className="rounded-full bg-blue-600 px-3 py-1 text-sm font-bold text-white">
+                                                            <span className="rounded-full bg-cerise px-3 py-1 text-sm font-bold text-white">
                                                                 {qty}
                                                             </span>
                                                         )}
@@ -207,14 +207,14 @@ export function VolunteerRequestForm({ location, availableItems }: VolunteerRequ
                                                             {hasCase && (
                                                                 <button
                                                                     onClick={() => updateQuantity(item.id, caseSize)}
-                                                                    className="flex-1 rounded-lg bg-blue-600 px-4 py-3 text-sm font-bold text-white hover:bg-blue-700 active:scale-95 transition-all"
+                                                                    className="flex-1 rounded-lg bg-cerise px-4 py-3 text-sm font-bold text-white hover:bg-jayouh active:scale-95 transition-all"
                                                                 >
                                                                     +1 {unitName} ({caseSize})
                                                                 </button>
                                                             )}
                                                             <button
                                                                 onClick={() => updateQuantity(item.id, 1)}
-                                                                className={`rounded-lg bg-slate-700 px-4 py-3 text-sm font-bold text-white hover:bg-slate-600 active:scale-95 transition-all ${hasCase ? 'flex-1' : 'flex-1'}`}
+                                                                className={`rounded-lg bg-grape border border-esbee px-4 py-3 text-sm font-bold text-white hover:bg-esbee/50 active:scale-95 transition-all ${hasCase ? 'flex-1' : 'flex-1'}`}
                                                             >
                                                                 +1 item
                                                             </button>
@@ -222,8 +222,8 @@ export function VolunteerRequestForm({ location, availableItems }: VolunteerRequ
                                                                 <button
                                                                     onClick={() => toggleCustomInput(item.id)}
                                                                     className={`flex-1 rounded-lg px-4 py-3 text-sm font-bold transition-all active:scale-95 ${customInputOpen[item.id]
-                                                                            ? 'bg-blue-600 text-white'
-                                                                            : 'bg-slate-600 text-white hover:bg-slate-500'
+                                                                            ? 'bg-cerise text-white'
+                                                                            : 'bg-grape border border-esbee text-white hover:bg-esbee/30'
                                                                         }`}
                                                                 >
                                                                     Custom
@@ -253,7 +253,7 @@ export function VolunteerRequestForm({ location, availableItems }: VolunteerRequ
                                                                             handleCustomAmountSubmit(item.id);
                                                                         }
                                                                     }}
-                                                                    className="flex-1 rounded-lg bg-slate-900 border border-slate-600 px-4 py-3 text-white text-sm font-medium focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none"
+                                                                    className="flex-1 rounded-lg bg-night border border-esbee px-4 py-3 text-white text-sm font-medium focus:border-cerise focus:ring-1 focus:ring-cerise focus:outline-none"
                                                                 />
                                                                 <button
                                                                     onClick={() => handleCustomAmountSubmit(item.id)}
@@ -277,12 +277,12 @@ export function VolunteerRequestForm({ location, availableItems }: VolunteerRequ
             </div>
 
             {/* Sticky Submit Button */}
-            <div className="fixed bottom-0 left-0 right-0 bg-slate-900 border-t border-slate-700 p-4">
+            <div className="fixed bottom-0 left-0 right-0 bg-night border-t border-esbee p-4">
                 <div className="mx-auto max-w-lg">
                     <button
                         onClick={() => setIsReviewOpen(true)}
                         disabled={totalItems === 0}
-                        className="w-full rounded-xl bg-blue-600 py-4 text-lg font-bold text-white hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.98] transition-all shadow-lg"
+                        className="w-full rounded-xl bg-cerise py-4 text-lg font-bold text-white hover:bg-jayouh disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.98] transition-all shadow-lg"
                     >
                         {totalItems === 0 ? (
                             'Select Items to Request'
@@ -296,12 +296,12 @@ export function VolunteerRequestForm({ location, availableItems }: VolunteerRequ
             {/* Review Modal */}
             {isReviewOpen && (
                 <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 backdrop-blur-sm p-4 sm:items-center">
-                    <div className="w-full max-w-md rounded-2xl bg-slate-900 border border-slate-700 shadow-2xl animate-slide-up max-h-[80vh] flex flex-col">
+                    <div className="w-full max-w-md rounded-2xl bg-grape border border-esbee shadow-2xl animate-slide-up max-h-[80vh] flex flex-col">
                         <div className="p-6 flex flex-col h-full">
                             <div className="flex items-center justify-between mb-4">
                                 <div>
                                     <h2 className="text-xl font-bold text-white">Review Request</h2>
-                                    <p className="text-sm text-blue-400">{location.name}</p>
+                                    <p className="text-sm text-cerise">{location.name}</p>
                                 </div>
                                 <button
                                     onClick={() => setIsReviewOpen(false)}
@@ -329,7 +329,7 @@ export function VolunteerRequestForm({ location, availableItems }: VolunteerRequ
                                         return (
                                             <div
                                                 key={itemId}
-                                                className="rounded-lg bg-slate-800 border border-slate-700 p-4 flex items-center justify-between gap-4"
+                                                className="rounded-lg bg-grape border border-esbee p-4 flex items-center justify-between gap-4"
                                             >
                                                 <div className="flex-1">
                                                     <h3 className="font-bold text-white">{item.name}</h3>
@@ -351,7 +351,7 @@ export function VolunteerRequestForm({ location, availableItems }: VolunteerRequ
                                             setIsReviewOpen(false);
                                             setError(null);
                                         }}
-                                        className="flex-1 rounded-lg bg-slate-800 text-white font-semibold py-3 hover:bg-slate-700 border border-slate-700"
+                                        className="flex-1 rounded-lg bg-grape border border-esbee text-white font-semibold py-3 hover:bg-esbee/30"
                                     >
                                         Back
                                     </button>

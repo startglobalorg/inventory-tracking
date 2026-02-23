@@ -19,16 +19,16 @@ export function InventoryCard({ item, mode = 'consume' }: { item: Item; mode?: '
     const unitName = item.unitName || 'case';
 
     const isConsume = mode === 'consume';
-    const buttonColor = isConsume ? 'bg-red-600 hover:bg-red-700' : 'bg-green-600 hover:bg-green-700';
-    const focusColor = isConsume ? 'focus:ring-red-500' : 'focus:ring-green-500';
+    const buttonColor = isConsume ? 'bg-cerise hover:bg-jayouh' : 'bg-green-600 hover:bg-green-700';
+    const focusColor = isConsume ? 'focus:ring-cerise' : 'focus:ring-green-500';
 
     return (
-        <div className={`rounded-xl border bg-slate-800 shadow-lg relative ${
+        <div className={`rounded-xl border bg-grape shadow-lg relative ${
             currentChange !== 0
-                ? 'border-blue-500 ring-1 ring-blue-500/50'
+                ? 'border-cerise ring-1 ring-cerise/50'
                 : item.coldStorage
-                    ? 'border-blue-400'
-                    : 'border-slate-700'
+                    ? 'border-violet-accent'
+                    : 'border-esbee'
         }`}>
             {item.coldStorage && (
                 <div className="absolute top-2 right-2 text-2xl" title="Cold Storage Item">
@@ -48,14 +48,14 @@ export function InventoryCard({ item, mode = 'consume' }: { item: Item; mode?: '
                         </span>
                     )}
                     {currentChange !== 0 && (
-                        <span className="inline-block mt-1 ml-1 rounded-full bg-blue-600 px-2 py-0.5 text-xs font-bold text-white">
+                        <span className="inline-block mt-1 ml-1 rounded-full bg-cerise px-2 py-0.5 text-xs font-bold text-white">
                             {currentChange > 0 ? '+' : ''}{currentChange} in basket
                         </span>
                     )}
                 </div>
 
                 {/* Stock */}
-                <div className="mb-4 rounded-lg bg-slate-900 p-3 text-center">
+                <div className="mb-4 rounded-lg bg-night p-3 text-center">
                     <p className="text-xs text-slate-400 uppercase">Stock</p>
                     <p className={`text-4xl font-black ${isLowStock ? 'text-orange-400' : 'text-green-400'}`}>
                         {optimisticStock}
@@ -85,7 +85,7 @@ export function InventoryCard({ item, mode = 'consume' }: { item: Item; mode?: '
                                 onChange={(e) => setCustomUnits(e.target.value)}
                                 placeholder={`# ${unitName}s`}
                                 min="1"
-                                className={`flex-1 rounded-lg bg-slate-900 border border-slate-700 text-white px-3 py-2 text-center ${focusColor} focus:ring-2`}
+                                className={`flex-1 rounded-lg bg-night border border-esbee text-white px-3 py-2 text-center ${focusColor} focus:ring-2`}
                                 style={{ minWidth: 0 }}
                             />
                             <button
@@ -113,7 +113,7 @@ export function InventoryCard({ item, mode = 'consume' }: { item: Item; mode?: '
                             onChange={(e) => setCustomAmount(e.target.value)}
                             placeholder="# items"
                             min="1"
-                            className={`flex-1 rounded-lg bg-slate-900 border border-slate-700 text-white px-3 py-2 text-center ${focusColor} focus:ring-2`}
+                            className={`flex-1 rounded-lg bg-night border border-esbee text-white px-3 py-2 text-center ${focusColor} focus:ring-2`}
                             style={{ minWidth: 0 }}
                         />
                         <button
