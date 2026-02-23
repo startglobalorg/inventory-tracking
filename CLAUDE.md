@@ -20,7 +20,7 @@ This is a Next.js 16 full-stack inventory management system for coffee points (c
 npm run dev              # Start dev server on http://localhost:3000
 npm run build            # Create production build (standalone output)
 npm start                # Run production build
-npm run lint             # Run ESLint
+npm run lint             # Run ESLint12
 
 npm run db:push          # Apply schema changes to database
 npm run db:studio        # Open Drizzle Studio (web UI for database)
@@ -70,6 +70,8 @@ npm run db:seed          # Seed database with initial items (see db/seed.ts)
 | **Order Fulfillment** | Kanban/list view for inventory team | `app/orders/page.tsx` |
 | **Prepare Order** | Load volunteer request into cart for fulfillment | `components/CartInitializer.tsx` |
 | **Locations** | 12 Coffee Points + Accreditation seeded | `db/seed.ts` |
+| **Volunteer Assignment** | Assign orders to named volunteers from fulfillment dashboard | `app/orders/FulfillmentDashboard.tsx` |
+| **Volunteer Dashboard** | Mobile view for delivery volunteers to claim and complete orders | `app/volunteer/page.tsx` |
 
 **Workflow:**
 1. Volunteer scans QR code → `/request/coffee-point-1`
@@ -77,8 +79,17 @@ npm run db:seed          # Seed database with initial items (see db/seed.ts)
 3. Submits request → Order status: `new`
 4. Can view past orders → `/request/coffee-point-1/history`
 5. Inventory team sees order in `/orders`
-6. Clicks "Prepare Order" → Items loaded into cart on main page
-7. Adjusts quantities if needed, submits → Stock deducted, order marked `done`
+6. Coordinator assigns order to a volunteer via dropdown (or volunteer self-assigns at `/volunteer`)
+7. Clicks "Prepare Order" → Items loaded into cart on main page
+8. Adjusts quantities if needed, submits → Stock deducted, order marked `done`
+
+**Delivery Volunteer Workflow:**
+1. Volunteer opens `/volunteer` on their phone
+2. Selects their name from the list (or registers — sets a 3-day `volunteerId` cookie)
+3. Default view is "My Orders"; "Available" button (with badge count) shows unclaimed orders
+4. Volunteer taps "Claim Order" → order moves to "My Orders", status → `in_progress`
+5. Volunteer delivers items, taps "Mark Done" → confirmation prompt appears → taps "Confirm Done"
+6. Order disappears from list; UI polls every 8 seconds for live updates without page reload
 
 ---
 
@@ -94,6 +105,9 @@ app/
 ├── orders/page.tsx       # Volunteer order fulfillment dashboard
 ├── add-item/page.tsx     # Create new items
 ├── item/[id]/page.tsx    # Edit/delete individual items
+├── volunteer/
+│   ├── page.tsx          # Delivery volunteer dashboard (server component)
+│   └── VolunteerApp.tsx  # Volunteer soft-login + My Orders / Available UI (client)
 ├── request/[slug]/
 │   ├── page.tsx          # Volunteer request form (public)
 │   └── history/page.tsx  # Location-specific order history
@@ -102,7 +116,8 @@ app/
     ├── order.ts          # submitOrder (batch stock updates)
     ├── history.ts        # Order history queries
     ├── webhook.ts        # Low stock notifications
-    └── volunteer-orders.ts  # Volunteer order management
+    ├── volunteer-orders.ts  # Volunteer order management
+    └── runners.ts        # Delivery volunteer CRUD, cookie management, assignment actions
 ```
 
 ### Database Schema
@@ -133,6 +148,13 @@ app/
   createdAt: timestamp
 }
 
+// runners table
+{
+  id: text (UUID, primary key)
+  name: text (unique)
+  createdAt: timestamp
+}
+
 // locations table (volunteer stations)
 {
   id: text (UUID, primary key)
@@ -145,6 +167,7 @@ app/
 {
   id: text (UUID, primary key)
   locationId: text (FK to locations)
+  runnerId: text (FK to runners, nullable — SET NULL on volunteer delete)
   status: enum ('new' | 'in_progress' | 'done')
   createdAt: timestamp
   completedAt: timestamp (nullable)
@@ -181,6 +204,15 @@ app/
 | `getOrdersByLocation()` | `app/actions/volunteer-orders.ts` | Fetch orders for specific location |
 | `updateOrderStatus()` | `app/actions/volunteer-orders.ts` | Change order status |
 | `getOrderForCart()` | `app/actions/volunteer-orders.ts` | Get order items for cart loading |
+| `getRunners()` | `app/actions/runners.ts` | List all delivery volunteers |
+| `getRunnerById()` | `app/actions/runners.ts` | Validate volunteer exists (used by server component) |
+| `createRunner()` | `app/actions/runners.ts` | Create volunteer + set cookie |
+| `setRunnerCookie()` | `app/actions/runners.ts` | Set `volunteerId` cookie (3-day, httpOnly) |
+| `clearRunnerCookie()` | `app/actions/runners.ts` | Clear volunteer cookie (switch user) |
+| `assignOrder()` | `app/actions/runners.ts` | Set/clear volunteer on an order (coordinator) |
+| `claimOrder()` | `app/actions/runners.ts` | Atomically claim order + set in_progress (volunteer) |
+| `getUnassignedOrders()` | `app/actions/runners.ts` | Orders with status=new and no volunteer assigned |
+| `getRunnerOrders()` | `app/actions/runners.ts` | Non-done orders assigned to a specific volunteer |
 
 ### Component Architecture
 
@@ -197,6 +229,7 @@ app/
 - `VolunteerRequestForm.tsx` - Mobile form for volunteers (`app/request/[slug]/`)
 - `LocationOrderHistory.tsx` - Order history per location (`app/request/[slug]/history/`)
 - `FulfillmentDashboard.tsx` - Kanban/list view for orders (`app/orders/`)
+- `VolunteerApp.tsx` - Soft login + My Orders / Available Orders UI (`app/volunteer/`)
 
 **Server Components**:
 - All page.tsx files fetch data and render client components

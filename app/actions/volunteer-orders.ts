@@ -1,7 +1,7 @@
 'use server';
 
 import { db } from '@/db/db';
-import { locations, orders, orderItems, items } from '@/db/schema';
+import { locations, orders, orderItems, items, runners } from '@/db/schema';
 import { eq, asc, desc, gt, inArray } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
 
@@ -15,6 +15,8 @@ export interface OrderWithDetails {
     status: OrderStatus;
     createdAt: Date;
     completedAt: Date | null;
+    runnerId: string | null;
+    runnerName: string | null;
     items: {
         id: string;
         itemId: string;
@@ -186,7 +188,7 @@ export async function submitVolunteerRequest(
 
 export async function getOrders(statusFilter?: OrderStatus | 'all') {
     try {
-        // Fetch orders with location names via JOIN
+        // Fetch orders with location names and runner names via JOINs
         const allOrders = await db
             .select({
                 id: orders.id,
@@ -195,9 +197,12 @@ export async function getOrders(statusFilter?: OrderStatus | 'all') {
                 status: orders.status,
                 createdAt: orders.createdAt,
                 completedAt: orders.completedAt,
+                runnerId: orders.runnerId,
+                runnerName: runners.name,
             })
             .from(orders)
             .leftJoin(locations, eq(orders.locationId, locations.id))
+            .leftJoin(runners, eq(orders.runnerId, runners.id))
             .orderBy(asc(orders.createdAt));
 
         // Fetch order items with item names via JOIN
@@ -230,6 +235,8 @@ export async function getOrders(statusFilter?: OrderStatus | 'all') {
                 status: order.status as OrderStatus,
                 createdAt: order.createdAt,
                 completedAt: order.completedAt,
+                runnerId: order.runnerId ?? null,
+                runnerName: order.runnerName ?? null,
                 items: (orderItemsByOrderId.get(order.id) || []).map(oi => ({
                     id: oi.id,
                     itemId: oi.itemId,
@@ -303,6 +310,8 @@ export async function getOrdersByLocation(locationId: string) {
             status: order.status as OrderStatus,
             createdAt: order.createdAt,
             completedAt: order.completedAt,
+            runnerId: null,
+            runnerName: null,
             items: (orderItemsByOrderId.get(order.id) || []).map(oi => ({
                 id: oi.id,
                 itemId: oi.itemId,
@@ -360,6 +369,8 @@ export async function getOrderById(orderId: string) {
             status: order.status as OrderStatus,
             createdAt: order.createdAt,
             completedAt: order.completedAt,
+            runnerId: null,
+            runnerName: null,
             items: orderItemsList.map(oi => ({
                 id: oi.id,
                 itemId: oi.itemId,
@@ -407,6 +418,7 @@ export async function updateOrderStatus(
             .where(eq(orders.id, orderId));
 
         revalidatePath('/orders');
+        revalidatePath('/runner');
         return { success: true };
     } catch (error) {
         console.error('Error updating order status:', error);
@@ -436,5 +448,17 @@ export async function getOrderForCart(orderId: string) {
     } catch (error) {
         console.error('Error getting order for cart:', error);
         return { success: false, error: 'Failed to get order for cart' };
+    }
+}
+
+export async function deleteOrder(orderId: string) {
+    try {
+        await db.delete(orders).where(eq(orders.id, orderId));
+        revalidatePath('/orders');
+        revalidatePath('/volunteer');
+        return { success: true };
+    } catch (error) {
+        console.error('Error deleting order:', error);
+        return { success: false, error: 'Failed to delete order' };
     }
 }

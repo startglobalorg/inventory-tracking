@@ -42,6 +42,15 @@ export const logs = sqliteTable('logs', {
     index('logs_item_id_idx').on(table.itemId),
 ]);
 
+// Runners table - people who physically carry items to locations
+export const runners = sqliteTable('runners', {
+    id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+    name: text('name').notNull().unique(),
+    createdAt: integer('created_at', { mode: 'timestamp' })
+        .notNull()
+        .default(sql`(unixepoch())`),
+});
+
 // Locations table - stores coffee points and other volunteer stations
 export const locations = sqliteTable('locations', {
     id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
@@ -61,6 +70,7 @@ export const orders = sqliteTable('orders', {
     status: text('status', {
         enum: ['new', 'in_progress', 'done']
     }).notNull().default('new'),
+    runnerId: text('runner_id').references(() => runners.id, { onDelete: 'set null' }),
     storageType: text('storage_type', {
         enum: ['normal', 'cold']
     }).notNull().default(sql`'normal'`),
@@ -88,6 +98,8 @@ export const orderItems = sqliteTable('order_items', {
 ]);
 
 // Type exports
+export type Runner = typeof runners.$inferSelect;
+export type NewRunner = typeof runners.$inferInsert;
 export type Item = typeof items.$inferSelect;
 export type NewItem = typeof items.$inferInsert;
 export type Log = typeof logs.$inferSelect;

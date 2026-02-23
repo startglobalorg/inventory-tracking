@@ -77,13 +77,7 @@ export function InventoryList({ initialItems, mode = 'consume' }: { initialItems
                                         href="/orders"
                                         className="rounded-lg bg-grape px-3 sm:px-4 py-2 text-xs sm:text-sm font-semibold text-violet-accent border border-esbee hover:border-cerise hover:text-white"
                                     >
-                                        Normal Orders
-                                    </Link>
-                                    <Link
-                                        href="/orders/cold-storage"
-                                        className="rounded-lg bg-grape px-3 sm:px-4 py-2 text-xs sm:text-sm font-semibold text-cerise border border-esbee hover:border-cerise hover:text-white"
-                                    >
-                                        Cold Orders ❄️
+                                        Orders
                                     </Link>
                                     <Link
                                         href="/history"

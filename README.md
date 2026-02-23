@@ -15,21 +15,28 @@ This system has **two main user interfaces**:
 
 ### 2. Inventory Management Dashboard (Central Team)
 - **Main Inventory**: `/` - Track and consume items
-- **Order Fulfillment**: `/orders` - View and fulfill volunteer requests
+- **Order Fulfillment**: `/orders` - View and fulfill volunteer requests (assign to delivery volunteers)
 - **History**: `/history` - View consumption logs and statistics
 - **Restock**: `/restock` - Record supplier deliveries
 - **Add Items**: `/add-item` - Create new inventory items
+
+### 3. Volunteer Delivery Dashboard (Delivery Staff, Mobile)
+- **URL**: `/volunteer`
+- No authentication — soft login via name selection (cookie persists 3 days)
+- Default view: personal active orders ("My Orders"); tap "Available" to see and claim unclaimed orders
 
 ## Key Features
 
 - **Volunteer Ordering System**: QR code-based requests from multiple locations
 - **Order Fulfillment Workflow**: New → In Progress → Done status tracking
+- **Volunteer Assignment**: Assign orders to named delivery volunteers from the fulfillment dashboard
+- **Volunteer Dashboard**: Mobile page at `/volunteer` for delivery volunteers to claim and complete orders
 - **Prepare Order Feature**: Load volunteer requests into cart for adjustment
 - **Dual-Mode Operation**: Consumption tracking and restocking workflows
 - **Batch Operations**: Order by cases/boxes or individual items
 - **Low Stock Alerts**: Automatic Slack notifications via webhook
 - **Full Audit Trail**: Complete history with edit capability
-- **Mobile-Optimized**: Touch-friendly interface for volunteers
+- **Mobile-Optimized**: Touch-friendly interface for all users
 
 ## Getting Started
 
@@ -129,16 +136,25 @@ Generate QR codes for volunteer request URLs using any QR code generator:
 3. **Submit request** - inventory team is automatically notified
 4. **Wait** - the team will bring your items
 
-### For Inventory Team
+### For Inventory Team (Coordinators)
 
 1. **Monitor orders** at `/orders` (fulfillment dashboard)
 2. **View new requests** organized by status (New, In Progress, Done)
-3. **Prepare order**:
+3. **Assign a volunteer** using the dropdown on each order card
+4. **Prepare order** (optional — for coordinators who also pull stock):
    - Click "Prepare Order" button
    - Order items are loaded into cart on main page
    - Adjust quantities if needed (e.g., if running low on stock)
-4. **Submit** to deduct from inventory and mark order as done
-5. **Deliver items** to the requesting location
+5. **Submit** to deduct from inventory and mark order as done
+
+### For Delivery Volunteers
+
+1. **Open `/volunteer`** on your phone (bookmark or share link)
+2. **Select your name** from the list, or enter a new name to register
+3. **"My Orders"** is the default view — shows orders already assigned to you
+4. **Tap "Available"** to browse unclaimed orders; tap "Claim Order" to take one
+5. **Deliver items** to the location shown on the card
+6. **Tap "Mark Done"** → confirm with "Confirm Done" — order is removed from your list
 
 ### For Stock Management
 

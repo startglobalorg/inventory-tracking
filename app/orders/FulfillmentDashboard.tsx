@@ -7,12 +7,16 @@ import {
     getOrders,
     updateOrderStatus,
     getOrderForCart,
+    deleteOrder,
     type OrderWithDetails,
     type OrderStatus,
 } from '@/app/actions/volunteer-orders';
+import { assignOrder } from '@/app/actions/runners';
+import type { Runner } from '@/db/schema';
 
 interface FulfillmentDashboardProps {
     initialOrders: OrderWithDetails[];
+    runners: Runner[];
 }
 
 function formatTimeAgo(date: Date): string {
@@ -32,20 +36,27 @@ function formatTimeAgo(date: Date): string {
 
 function OrderCard({
     order,
+    runners,
     onStatusChange,
+    onAssign,
     onPrepare,
+    onDelete,
     isDragging,
     onDragStart,
     onDragEnd,
 }: {
     order: OrderWithDetails;
+    runners: Runner[];
     onStatusChange: (orderId: string, newStatus: OrderStatus) => void;
+    onAssign: (orderId: string, runnerId: string | null) => void;
     onPrepare: (orderId: string) => void;
+    onDelete: (orderId: string) => void;
     isDragging?: boolean;
     onDragStart?: (e: DragEvent<HTMLDivElement>, orderId: string) => void;
     onDragEnd?: () => void;
 }) {
     const [isUpdating, setIsUpdating] = useState(false);
+    const [confirmDelete, setConfirmDelete] = useState(false);
 
     const handleStatusChange = async (newStatus: OrderStatus) => {
         setIsUpdating(true);
@@ -88,15 +99,22 @@ function OrderCard({
             <div className="flex items-start justify-between gap-2 mb-3">
                 <div>
                     <h3 className="font-bold text-white">{order.locationName}</h3>
-                    <p className="text-xs text-slate-400">{formatTimeAgo(order.createdAt)}</p>
+                    <p className="text-xs text-slate-400">
+                        Ordered {formatTimeAgo(order.createdAt)}
+                    </p>
+                    {order.status === 'done' && order.completedAt && (
+                        <p className="text-xs text-slate-400">
+                            Completed {formatTimeAgo(order.completedAt)}
+                        </p>
+                    )}
                 </div>
-                <span className={`rounded-full px-2 py-1 text-xs font-bold ${statusBadgeColors[order.status]}`}>
+                <span className={`rounded-full px-2 py-1 text-xs font-bold shrink-0 ${statusBadgeColors[order.status]}`}>
                     {statusLabels[order.status]}
                 </span>
             </div>
 
             {/* Items */}
-            <div className="mb-4 rounded-lg bg-night/50 p-3">
+            <div className="mb-3 rounded-lg bg-night/50 p-3">
                 <ul className="space-y-1">
                     {order.items.map(item => (
                         <li key={item.id} className="flex justify-between text-sm">
@@ -106,6 +124,28 @@ function OrderCard({
                     ))}
                 </ul>
             </div>
+
+            {/* Runner assignment */}
+            {order.status !== 'done' ? (
+                <div className="mb-3">
+                    <select
+                        value={order.runnerId ?? ''}
+                        onChange={(e) => onAssign(order.id, e.target.value || null)}
+                        className="w-full rounded-lg bg-night border border-esbee text-white text-sm px-3 py-2 focus:border-cerise focus:outline-none"
+                    >
+                        <option value="">Unassigned</option>
+                        {runners.map(r => (
+                            <option key={r.id} value={r.id}>{r.name}</option>
+                        ))}
+                    </select>
+                </div>
+            ) : order.runnerName ? (
+                <div className="mb-3">
+                    <span className="inline-flex items-center gap-1 rounded-full bg-esbee/20 border border-esbee px-3 py-1 text-xs text-slate-300">
+                        Volunteer: <span className="font-bold text-white">{order.runnerName}</span>
+                    </span>
+                </div>
+            ) : null}
 
             {/* Actions */}
             <div className="flex flex-wrap gap-2">
@@ -152,12 +192,36 @@ function OrderCard({
                         {isUpdating ? '...' : 'Revert to In Progress'}
                     </button>
                 )}
+                {/* Delete — always available, with inline confirmation */}
+                {confirmDelete ? (
+                    <>
+                        <button
+                            onClick={() => setConfirmDelete(false)}
+                            className="flex-1 rounded-lg border border-esbee bg-night px-4 py-2 text-sm font-bold text-slate-300 hover:bg-esbee/20 active:scale-95 transition-all"
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            onClick={() => onDelete(order.id)}
+                            className="flex-1 rounded-lg bg-red-600 px-4 py-2 text-sm font-bold text-white hover:bg-red-700 active:scale-95 transition-all"
+                        >
+                            Confirm Delete
+                        </button>
+                    </>
+                ) : (
+                    <button
+                        onClick={() => setConfirmDelete(true)}
+                        className="rounded-lg border border-red-800/50 bg-red-900/20 px-3 py-2 text-sm font-bold text-red-400 hover:bg-red-900/40 active:scale-95 transition-all"
+                    >
+                        Delete
+                    </button>
+                )}
             </div>
         </div>
     );
 }
 
-export function FulfillmentDashboard({ initialOrders }: FulfillmentDashboardProps) {
+export function FulfillmentDashboard({ initialOrders, runners }: FulfillmentDashboardProps) {
     const router = useRouter();
     const [orders, setOrders] = useState<OrderWithDetails[]>(initialOrders);
     const [viewMode, setViewMode] = useState<'kanban' | 'list'>('kanban');
@@ -218,6 +282,32 @@ export function FulfillmentDashboard({ initialOrders }: FulfillmentDashboardProp
             if (ordersResult.success && ordersResult.data) {
                 setOrders(ordersResult.data);
             }
+        }
+    };
+
+    const handleDelete = async (orderId: string) => {
+        setOrders(prev => prev.filter(o => o.id !== orderId));
+        await deleteOrder(orderId);
+        // Re-fetch in case the optimistic removal missed something
+        const result = await getOrders('all');
+        if (result.success && result.data) setOrders(result.data);
+    };
+
+    const handleAssign = async (orderId: string, runnerId: string | null) => {
+        // Optimistic update
+        const runner = runners.find(r => r.id === runnerId) ?? null;
+        setOrders(prev =>
+            prev.map(o =>
+                o.id === orderId
+                    ? { ...o, runnerId: runnerId ?? null, runnerName: runner?.name ?? null }
+                    : o
+            )
+        );
+        await assignOrder(orderId, runnerId);
+        // Re-fetch to sync server state
+        const result = await getOrders('all');
+        if (result.success && result.data) {
+            setOrders(result.data);
         }
     };
 
@@ -318,7 +408,10 @@ export function FulfillmentDashboard({ initialOrders }: FulfillmentDashboardProp
                                     <OrderCard
                                         key={order.id}
                                         order={order}
+                                        runners={runners}
                                         onStatusChange={handleStatusChange}
+                                        onAssign={handleAssign}
+                                        onDelete={handleDelete}
                                         onPrepare={handlePrepareOrder}
                                     />
                                 ))}
@@ -333,7 +426,10 @@ export function FulfillmentDashboard({ initialOrders }: FulfillmentDashboardProp
                                             <OrderCard
                                                 key={order.id}
                                                 order={order}
+                                                runners={runners}
                                                 onStatusChange={handleStatusChange}
+                                                onAssign={handleAssign}
+                                                onDelete={handleDelete}
                                                 onPrepare={handlePrepareOrder}
                                             />
                                         ))}
@@ -365,7 +461,10 @@ export function FulfillmentDashboard({ initialOrders }: FulfillmentDashboardProp
                                     <OrderCard
                                         key={order.id}
                                         order={order}
+                                        runners={runners}
                                         onStatusChange={handleStatusChange}
+                                        onAssign={handleAssign}
+                                        onDelete={handleDelete}
                                         onPrepare={handlePrepareOrder}
                                         isDragging={draggedOrderId === order.id}
                                         onDragStart={handleDragStart}
@@ -400,7 +499,10 @@ export function FulfillmentDashboard({ initialOrders }: FulfillmentDashboardProp
                                     <OrderCard
                                         key={order.id}
                                         order={order}
+                                        runners={runners}
                                         onStatusChange={handleStatusChange}
+                                        onAssign={handleAssign}
+                                        onDelete={handleDelete}
                                         onPrepare={handlePrepareOrder}
                                         isDragging={draggedOrderId === order.id}
                                         onDragStart={handleDragStart}
@@ -436,7 +538,10 @@ export function FulfillmentDashboard({ initialOrders }: FulfillmentDashboardProp
                                         <OrderCard
                                             key={order.id}
                                             order={order}
+                                            runners={runners}
                                             onStatusChange={handleStatusChange}
+                                            onAssign={handleAssign}
+                                        onDelete={handleDelete}
                                             onPrepare={handlePrepareOrder}
                                             isDragging={draggedOrderId === order.id}
                                             onDragStart={handleDragStart}
