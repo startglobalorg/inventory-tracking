@@ -56,6 +56,7 @@ export const locations = sqliteTable('locations', {
     id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
     name: text('name').notNull(),
     slug: text('slug').notNull().unique(), // For QR codes, e.g., "coffee-point-1"
+    type: text('type', { enum: ['inventory', 'text'] }).notNull().default('inventory'),
     createdAt: integer('created_at', { mode: 'timestamp' })
         .notNull()
         .default(sql`(unixepoch())`),
@@ -68,9 +69,11 @@ export const orders = sqliteTable('orders', {
         .notNull()
         .references(() => locations.id, { onDelete: 'cascade' }),
     status: text('status', {
-        enum: ['new', 'in_progress', 'done']
+        enum: ['new', 'in_progress', 'done', 'cancelled']
     }).notNull().default('new'),
     runnerId: text('runner_id').references(() => runners.id, { onDelete: 'set null' }),
+    customRequest: text('custom_request'),
+    cancelledBy: text('cancelled_by'),
     storageType: text('storage_type', {
         enum: ['normal', 'cold']
     }).notNull().default(sql`'normal'`),

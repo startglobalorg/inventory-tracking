@@ -28,6 +28,8 @@ export function VolunteerRequestForm({ location, availableItems }: VolunteerRequ
     const [error, setError] = useState<string | null>(null);
     const [customInputOpen, setCustomInputOpen] = useState<Record<string, boolean>>({});
     const [customInputValues, setCustomInputValues] = useState<Record<string, string>>({});
+    // For text-type locations
+    const [textRequest, setTextRequest] = useState('');
 
     const updateQuantity = (itemId: string, delta: number) => {
         setQuantities(prev => {
@@ -92,21 +94,25 @@ export function VolunteerRequestForm({ location, availableItems }: VolunteerRequ
         }
     };
 
-    // Group items by category
-    const itemsByCategory = availableItems.reduce((acc, item) => {
-        if (!acc[item.category]) {
-            acc[item.category] = [];
+    const handleTextSubmit = async () => {
+        if (!textRequest.trim() || isSubmitting) return;
+        setIsSubmitting(true);
+        setError(null);
+        const result = await submitVolunteerRequest(location.id, {}, textRequest.trim());
+        setIsSubmitting(false);
+        if (result.success) {
+            setIsSuccess(true);
+            setTextRequest('');
+        } else {
+            setError(result.error || 'Failed to submit request');
         }
-        acc[item.category].push(item);
-        return acc;
-    }, {} as Record<string, AvailableItem[]>);
+    };
 
-    const categories = Object.keys(itemsByCategory).sort();
-
-    // Success screen
+    // Success screen (shared between inventory and text modes)
     if (isSuccess) {
+        const isTextMode = location.type === 'text';
         return (
-            <div className="p-4 min-h-screen flex items-center justify-center">
+            <div className="p-4 min-h-[100dvh] flex items-center justify-center">
                 <div className="mx-auto max-w-lg w-full">
                     <div className="rounded-xl bg-green-900/50 border border-green-700 p-8 text-center">
                         <div className="mb-4 text-6xl">
@@ -116,7 +122,9 @@ export function VolunteerRequestForm({ location, availableItems }: VolunteerRequ
                             Request Submitted!
                         </h1>
                         <p className="text-green-200 mb-6">
-                            The inventory team has been notified and will bring your items shortly.
+                            {isTextMode
+                                ? 'Your request has been received. The team will be with you shortly.'
+                                : 'The inventory team has been notified and will bring your items shortly.'}
                         </p>
                         <button
                             onClick={() => setIsSuccess(false)}
@@ -129,6 +137,70 @@ export function VolunteerRequestForm({ location, availableItems }: VolunteerRequ
             </div>
         );
     }
+
+    // Text-mode layout (Accreditation, Info Points, etc.)
+    if (location.type === 'text') {
+        return (
+            <div className="min-h-[100dvh] flex flex-col pb-[max(1.5rem,env(safe-area-inset-bottom))]">
+                <div className="sticky top-0 z-10">
+                    <BrandHeader
+                        title="Request"
+                        subtitle={location.name}
+                    />
+                    <div className="bg-grape border-b border-esbee px-4 py-2">
+                        <div className="mx-auto max-w-lg flex items-center justify-end">
+                            <Link
+                                href={`/request/${location.slug}/history`}
+                                className="rounded-lg bg-grape border border-esbee px-3 py-2 text-xs font-semibold text-slate-300 hover:bg-esbee/30 hover:text-white transition-all"
+                            >
+                                History
+                            </Link>
+                        </div>
+                    </div>
+                </div>
+
+                <div className="flex-1 p-4 mx-auto max-w-lg w-full">
+                    {error && (
+                        <div className="mb-4 rounded-lg bg-red-900/50 border border-red-700 p-4 text-red-200 text-sm">
+                            {error}
+                        </div>
+                    )}
+
+                    <div className="mb-6">
+                        <label className="block text-base font-bold text-white mb-3">
+                            What do you need?
+                        </label>
+                        <textarea
+                            value={textRequest}
+                            onChange={(e) => setTextRequest(e.target.value)}
+                            placeholder="Describe what you need…"
+                            rows={7}
+                            className="w-full rounded-xl bg-grape border border-esbee text-white text-base px-4 py-3 focus:border-cerise focus:ring-1 focus:ring-cerise focus:outline-none resize-none placeholder:text-slate-500"
+                        />
+                    </div>
+
+                    <button
+                        onClick={handleTextSubmit}
+                        disabled={!textRequest.trim() || isSubmitting}
+                        className="w-full rounded-xl bg-cerise py-4 text-lg font-bold text-white hover:bg-jayouh disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.98] transition-all shadow-lg"
+                    >
+                        {isSubmitting ? 'Submitting…' : 'Submit Request'}
+                    </button>
+                </div>
+            </div>
+        );
+    }
+
+    // Group items by category
+    const itemsByCategory = availableItems.reduce((acc, item) => {
+        if (!acc[item.category]) {
+            acc[item.category] = [];
+        }
+        acc[item.category].push(item);
+        return acc;
+    }, {} as Record<string, AvailableItem[]>);
+
+    const categories = Object.keys(itemsByCategory).sort();
 
     return (
         <div className="pb-32">

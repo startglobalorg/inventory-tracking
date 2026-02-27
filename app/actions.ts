@@ -137,6 +137,31 @@ export async function updateItem(itemId: string, formData: {
     }
 }
 
+export async function toggleColdStorage(itemId: string) {
+    try {
+        const existing = await db
+            .select({ coldStorage: items.coldStorage })
+            .from(items)
+            .where(eq(items.id, itemId))
+            .limit(1);
+
+        if (existing.length === 0) {
+            return { success: false, error: 'Item not found' };
+        }
+
+        const newValue = !existing[0].coldStorage;
+        await db.update(items).set({ coldStorage: newValue }).where(eq(items.id, itemId));
+
+        revalidatePath('/');
+        revalidatePath('/restock');
+
+        return { success: true, coldStorage: newValue };
+    } catch (error) {
+        console.error('Error toggling cold storage:', error);
+        return { success: false, error: 'Failed to update storage type' };
+    }
+}
+
 export async function deleteItem(itemId: string) {
     try {
         // Check if item exists

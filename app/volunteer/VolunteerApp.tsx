@@ -54,15 +54,20 @@ function OrderCard({
                     {order.status === 'new' ? 'New' : 'In Progress'}
                 </span>
             </div>
-            <ul className="mb-3 space-y-1.5 rounded-lg bg-night/50 p-3">
-                {order.items.map(item => (
-                    <li key={item.id} className="flex justify-between gap-3 text-sm">
-                        {/* min-w-0 + truncate prevents long names from breaking layout */}
-                        <span className="text-slate-300 min-w-0 truncate">{item.itemName}</span>
-                        <span className="font-bold text-white shrink-0">×{item.quantity}</span>
-                    </li>
-                ))}
-            </ul>
+            <div className="mb-3 rounded-lg bg-night/50 p-3">
+                {order.customRequest ? (
+                    <p className="text-sm text-slate-200 whitespace-pre-wrap">{order.customRequest}</p>
+                ) : (
+                    <ul className="space-y-1.5">
+                        {order.items.map(item => (
+                            <li key={item.id} className="flex justify-between gap-3 text-sm">
+                                <span className="text-slate-300 min-w-0 truncate">{item.itemName}</span>
+                                <span className="font-bold text-white shrink-0">×{item.quantity}</span>
+                            </li>
+                        ))}
+                    </ul>
+                )}
+            </div>
             {action}
         </div>
     );

@@ -4,11 +4,24 @@ import { useState } from 'react';
 import Link from 'next/link';
 import type { Item } from '@/db/schema';
 import { useCart } from './CartProvider';
+import { toggleColdStorage } from '@/app/actions';
 
 export function InventoryCard({ item, mode = 'consume' }: { item: Item; mode?: 'consume' | 'restock' }) {
     const { addToCart, getItemChange } = useCart();
     const [customAmount, setCustomAmount] = useState('');
     const [customUnits, setCustomUnits] = useState('');
+    const [isCold, setIsCold] = useState(item.coldStorage);
+    const [isToggling, setIsToggling] = useState(false);
+
+    const handleToggleCold = async () => {
+        setIsCold(prev => !prev);
+        setIsToggling(true);
+        const result = await toggleColdStorage(item.id);
+        setIsToggling(false);
+        if (!result.success) {
+            setIsCold(prev => !prev); // revert on failure
+        }
+    };
 
     const currentChange = getItemChange(item.id);
     const optimisticStock = item.stock + currentChange;
@@ -26,15 +39,22 @@ export function InventoryCard({ item, mode = 'consume' }: { item: Item; mode?: '
         <div className={`rounded-xl border bg-grape shadow-lg relative ${
             currentChange !== 0
                 ? 'border-cerise ring-1 ring-cerise/50'
-                : item.coldStorage
+                : isCold
                     ? 'border-violet-accent'
                     : 'border-esbee'
         }`}>
-            {item.coldStorage && (
-                <div className="absolute top-2 right-2 text-2xl" title="Cold Storage Item">
-                    ❄️
-                </div>
-            )}
+            <button
+                onClick={handleToggleCold}
+                disabled={isToggling}
+                title={isCold ? 'Move to normal storage' : 'Move to cold storage'}
+                className={`absolute top-2 right-2 rounded-lg px-1.5 py-0.5 text-xl transition-all active:scale-90 disabled:cursor-not-allowed ${
+                    isCold
+                        ? 'opacity-100 hover:opacity-60'
+                        : 'opacity-20 hover:opacity-60'
+                }`}
+            >
+                ❄️
+            </button>
             <div className="p-4">
                 {/* Title */}
                 <div className="mb-3">

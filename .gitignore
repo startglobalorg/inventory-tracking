@@ -46,3 +46,6 @@ sqlite-data/
 *.db
 *.db-shm
 *.db-wal
+
+# Instructions
+button_instructions.md

@@ -76,6 +76,21 @@ export async function clearRunnerCookie() {
     cookieStore.delete('volunteerId');
 }
 
+export async function deleteRunner(runnerId: string) {
+    try {
+        // Manually clear runner_id on orders (FK cascade not enforced without PRAGMA foreign_keys = ON)
+        await db.update(orders).set({ runnerId: null }).where(eq(orders.runnerId, runnerId));
+        await db.delete(runners).where(eq(runners.id, runnerId));
+        revalidatePath('/admin');
+        revalidatePath('/orders');
+        revalidatePath('/volunteer');
+        return { success: true };
+    } catch (error) {
+        console.error('Error deleting runner:', error);
+        return { success: false, error: 'Failed to delete volunteer' };
+    }
+}
+
 export async function assignOrder(orderId: string, runnerId: string | null) {
     try {
         await db
@@ -94,13 +109,18 @@ export async function assignOrder(orderId: string, runnerId: string | null) {
 
 export async function claimOrder(orderId: string, runnerId: string) {
     try {
-        await db
+        const updated = await db
             .update(orders)
             .set({ runnerId, status: 'in_progress' })
-            .where(and(eq(orders.id, orderId), isNull(orders.runnerId)));
+            .where(and(eq(orders.id, orderId), isNull(orders.runnerId)))
+            .returning({ id: orders.id });
+
+        if (!updated || updated.length === 0) {
+            return { success: false, error: 'Order already claimed by someone else' };
+        }
 
         revalidatePath('/orders');
-        revalidatePath('/runner');
+        revalidatePath('/volunteer');
         return { success: true };
     } catch (error) {
         console.error('Error claiming order:', error);
@@ -118,6 +138,8 @@ export async function getUnassignedOrders() {
                 status: orders.status,
                 createdAt: orders.createdAt,
                 completedAt: orders.completedAt,
+                customRequest: orders.customRequest,
+                cancelledBy: orders.cancelledBy,
             })
             .from(orders)
             .leftJoin(locations, eq(orders.locationId, locations.id))
@@ -157,6 +179,8 @@ export async function getUnassignedOrders() {
             completedAt: o.completedAt,
             runnerId: null as string | null,
             runnerName: null as string | null,
+            customRequest: o.customRequest ?? null,
+            cancelledBy: o.cancelledBy ?? null,
             items: (itemsByOrder.get(o.id) || []).map(oi => ({
                 id: oi.id,
                 itemId: oi.itemId,
@@ -182,6 +206,8 @@ export async function getRunnerOrders(runnerId: string) {
                 status: orders.status,
                 createdAt: orders.createdAt,
                 completedAt: orders.completedAt,
+                customRequest: orders.customRequest,
+                cancelledBy: orders.cancelledBy,
             })
             .from(orders)
             .leftJoin(locations, eq(orders.locationId, locations.id))
@@ -229,6 +255,8 @@ export async function getRunnerOrders(runnerId: string) {
             completedAt: o.completedAt,
             runnerId,
             runnerName,
+            customRequest: o.customRequest ?? null,
+            cancelledBy: o.cancelledBy ?? null,
             items: (itemsByOrder.get(o.id) || []).map(oi => ({
                 id: oi.id,
                 itemId: oi.itemId,
@@ -255,8 +283,13 @@ export async function completeVolunteerOrder(orderId: string, volunteerName: str
                 .where(eq(orderItems.orderId, orderId))
                 .all();
 
+            // Text-based orders have no order_items — just mark done, no stock deduction
             if (orderItemsList.length === 0) {
-                throw new Error('Order has no items');
+                tx.update(orders)
+                    .set({ status: 'done', completedAt: new Date() })
+                    .where(eq(orders.id, orderId))
+                    .run();
+                return { lowStockItems: [] };
             }
 
             const lowStockItems: Array<{

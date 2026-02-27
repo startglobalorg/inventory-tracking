@@ -6,7 +6,7 @@ import { eq, asc, desc, gt, inArray } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
 
 // Types
-export type OrderStatus = 'new' | 'in_progress' | 'done';
+export type OrderStatus = 'new' | 'in_progress' | 'done' | 'cancelled';
 
 export interface OrderWithDetails {
     id: string;
@@ -17,6 +17,8 @@ export interface OrderWithDetails {
     completedAt: Date | null;
     runnerId: string | null;
     runnerName: string | null;
+    customRequest: string | null;
+    cancelledBy: string | null;
     items: {
         id: string;
         itemId: string;
@@ -112,16 +114,17 @@ export async function getAvailableItems() {
 
 export async function submitVolunteerRequest(
     locationId: string,
-    requestedItems: Record<string, number> // itemId -> quantity
+    requestedItems: Record<string, number>, // itemId -> quantity
+    customRequest?: string
 ) {
     try {
-        // Filter out zero quantities
-        const validItems = Object.entries(requestedItems).filter(
-            ([, qty]) => qty > 0
-        );
+        const isTextRequest = !!customRequest?.trim();
 
-        if (validItems.length === 0) {
-            return { success: false, error: 'No items selected' };
+        if (!isTextRequest) {
+            const validItems = Object.entries(requestedItems).filter(([, qty]) => qty > 0);
+            if (validItems.length === 0) {
+                return { success: false, error: 'No items selected' };
+            }
         }
 
         // Note: better-sqlite3 transactions must be synchronous (no async/await)
@@ -138,7 +141,19 @@ export async function submitVolunteerRequest(
                 throw new Error('Location not found');
             }
 
-            // Validate all item IDs exist
+            if (isTextRequest) {
+                // Text request: store the message, skip order_items
+                const newOrder = tx
+                    .insert(orders)
+                    .values({ locationId, status: 'new', customRequest: customRequest!.trim() })
+                    .returning()
+                    .all();
+                if (!newOrder || newOrder.length === 0) throw new Error('Failed to create order');
+                return { orderId: newOrder[0].id };
+            }
+
+            // Inventory request: validate items then insert order + order_items
+            const validItems = Object.entries(requestedItems).filter(([, qty]) => qty > 0);
             const itemIds = validItems.map(([id]) => id);
             const existingItems = tx
                 .select({ id: items.id })
@@ -146,34 +161,23 @@ export async function submitVolunteerRequest(
                 .where(inArray(items.id, itemIds))
                 .all();
 
-            if (!existingItems) {
-                throw new Error('Failed to validate items');
-            }
+            if (!existingItems) throw new Error('Failed to validate items');
 
             const existingIds = new Set(existingItems.map(i => i.id));
             const missingIds = itemIds.filter(id => !existingIds.has(id));
+            if (missingIds.length > 0) throw new Error('Some requested items no longer exist');
 
-            if (missingIds.length > 0) {
-                throw new Error('Some requested items no longer exist');
-            }
-
-            // Create a single order for all items
             const newOrder = tx
                 .insert(orders)
                 .values({ locationId, status: 'new' })
                 .returning()
                 .all();
-
-            if (!newOrder || newOrder.length === 0) {
-                throw new Error('Failed to create order');
-            }
+            if (!newOrder || newOrder.length === 0) throw new Error('Failed to create order');
 
             const orderId = newOrder[0].id;
-
             for (const [itemId, quantity] of validItems) {
                 tx.insert(orderItems).values({ orderId, itemId, quantity }).run();
             }
-
             return { orderId };
         });
 
@@ -199,6 +203,8 @@ export async function getOrders(statusFilter?: OrderStatus | 'all') {
                 completedAt: orders.completedAt,
                 runnerId: orders.runnerId,
                 runnerName: runners.name,
+                customRequest: orders.customRequest,
+                cancelledBy: orders.cancelledBy,
             })
             .from(orders)
             .leftJoin(locations, eq(orders.locationId, locations.id))
@@ -237,6 +243,8 @@ export async function getOrders(statusFilter?: OrderStatus | 'all') {
                 completedAt: order.completedAt,
                 runnerId: order.runnerId ?? null,
                 runnerName: order.runnerName ?? null,
+                customRequest: order.customRequest ?? null,
+                cancelledBy: order.cancelledBy ?? null,
                 items: (orderItemsByOrderId.get(order.id) || []).map(oi => ({
                     id: oi.id,
                     itemId: oi.itemId,
@@ -271,6 +279,8 @@ export async function getOrdersByLocation(locationId: string) {
                 status: orders.status,
                 createdAt: orders.createdAt,
                 completedAt: orders.completedAt,
+                customRequest: orders.customRequest,
+                cancelledBy: orders.cancelledBy,
             })
             .from(orders)
             .where(eq(orders.locationId, locationId))
@@ -312,6 +322,8 @@ export async function getOrdersByLocation(locationId: string) {
             completedAt: order.completedAt,
             runnerId: null,
             runnerName: null,
+            customRequest: order.customRequest ?? null,
+            cancelledBy: order.cancelledBy ?? null,
             items: (orderItemsByOrderId.get(order.id) || []).map(oi => ({
                 id: oi.id,
                 itemId: oi.itemId,
@@ -338,6 +350,8 @@ export async function getOrderById(orderId: string) {
                 status: orders.status,
                 createdAt: orders.createdAt,
                 completedAt: orders.completedAt,
+                customRequest: orders.customRequest,
+                cancelledBy: orders.cancelledBy,
             })
             .from(orders)
             .leftJoin(locations, eq(orders.locationId, locations.id))
@@ -371,6 +385,8 @@ export async function getOrderById(orderId: string) {
             completedAt: order.completedAt,
             runnerId: null,
             runnerName: null,
+            customRequest: order.customRequest ?? null,
+            cancelledBy: order.cancelledBy ?? null,
             items: orderItemsList.map(oi => ({
                 id: oi.id,
                 itemId: oi.itemId,
@@ -448,6 +464,35 @@ export async function getOrderForCart(orderId: string) {
     } catch (error) {
         console.error('Error getting order for cart:', error);
         return { success: false, error: 'Failed to get order for cart' };
+    }
+}
+
+export async function cancelOrder(orderId: string, locationName: string) {
+    try {
+        const order = await db
+            .select({ status: orders.status })
+            .from(orders)
+            .where(eq(orders.id, orderId))
+            .limit(1);
+
+        if (order.length === 0) {
+            return { success: false, error: 'Order not found' };
+        }
+
+        if (order[0].status === 'done' || order[0].status === 'cancelled') {
+            return { success: false, error: 'Order cannot be cancelled' };
+        }
+
+        await db
+            .update(orders)
+            .set({ status: 'cancelled', cancelledBy: locationName })
+            .where(eq(orders.id, orderId));
+
+        revalidatePath('/orders');
+        return { success: true };
+    } catch (error) {
+        console.error('Error cancelling order:', error);
+        return { success: false, error: 'Failed to cancel order' };
     }
 }
 

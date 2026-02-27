@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { getOrdersByLocation, type OrderWithDetails } from '@/app/actions/volunteer-orders';
+import { getOrdersByLocation, cancelOrder, type OrderWithDetails } from '@/app/actions/volunteer-orders';
 import type { Location } from '@/db/schema';
 
 interface LocationOrderHistoryProps {
@@ -37,8 +37,24 @@ function formatTimeAgo(date: Date): string {
     return formatDate(date);
 }
 
+const statusColors = {
+    new: 'bg-yellow-900/50 border-yellow-600 text-yellow-400',
+    in_progress: 'bg-blue-900/50 border-blue-600 text-blue-400',
+    done: 'bg-green-900/50 border-green-700 text-green-400',
+    cancelled: 'bg-red-900/50 border-red-700 text-red-400',
+};
+
+const statusLabels = {
+    new: 'New',
+    in_progress: 'In Progress',
+    done: 'Delivered',
+    cancelled: 'Cancelled',
+};
+
 export function LocationOrderHistory({ location, initialOrders }: LocationOrderHistoryProps) {
     const [orders, setOrders] = useState<OrderWithDetails[]>(initialOrders);
+    const [confirmingCancelId, setConfirmingCancelId] = useState<string | null>(null);
+    const [cancelError, setCancelError] = useState<string | null>(null);
 
     // Refresh orders periodically
     useEffect(() => {
@@ -47,25 +63,33 @@ export function LocationOrderHistory({ location, initialOrders }: LocationOrderH
             if (result.success && result.data) {
                 setOrders(result.data);
             }
-        }, 15000); // Refresh every 15 seconds
+        }, 15000);
 
         return () => clearInterval(interval);
     }, [location.id]);
 
-    const statusColors = {
-        new: 'bg-yellow-900/50 border-yellow-600 text-yellow-400',
-        in_progress: 'bg-blue-900/50 border-blue-600 text-blue-400',
-        done: 'bg-green-900/50 border-green-700 text-green-400',
+    const handleCancel = async (orderId: string) => {
+        // Optimistic update
+        const prev = orders;
+        setOrders(current =>
+            current.map(o =>
+                o.id === orderId
+                    ? { ...o, status: 'cancelled' as const, cancelledBy: location.name }
+                    : o
+            )
+        );
+        setConfirmingCancelId(null);
+        setCancelError(null);
+
+        const result = await cancelOrder(orderId, location.name);
+        if (!result.success) {
+            setOrders(prev);
+            setCancelError(result.error || 'Failed to cancel order');
+        }
     };
 
-    const statusLabels = {
-        new: 'New',
-        in_progress: 'In Progress',
-        done: 'Delivered',
-    };
-
-    const pendingOrders = orders.filter(o => o.status === 'new' || o.status === 'in_progress');
-    const completedOrders = orders.filter(o => o.status === 'done');
+    const activeOrders = orders.filter(o => o.status === 'new' || o.status === 'in_progress');
+    const pastOrders = orders.filter(o => o.status === 'done' || o.status === 'cancelled');
 
     return (
         <div className="pb-8">
@@ -81,20 +105,23 @@ export function LocationOrderHistory({ location, initialOrders }: LocationOrderH
                         </svg>
                         Back to Request
                     </Link>
-                    <h1 className="text-xl font-bold text-white">
-                        Order History
-                    </h1>
-                    <p className="text-blue-400 font-medium mt-1">
-                        {location.name}
-                    </p>
+                    <h1 className="text-xl font-bold text-white">Order History</h1>
+                    <p className="text-blue-400 font-medium mt-1">{location.name}</p>
                 </div>
             </div>
 
             {/* Content */}
             <div className="mx-auto max-w-lg p-4">
+                {cancelError && (
+                    <div className="mb-4 flex items-center justify-between rounded-lg bg-red-900/50 border border-red-700 p-3 text-sm text-red-200">
+                        <span>{cancelError}</span>
+                        <button onClick={() => setCancelError(null)} className="ml-3 text-red-400 hover:text-red-200">✕</button>
+                    </div>
+                )}
+
                 {orders.length === 0 ? (
                     <div className="rounded-xl bg-slate-800 border border-slate-700 p-8 text-center">
-                        <div className="text-4xl mb-4">&#x1F4E6;</div>
+                        <div className="text-4xl mb-4">📦</div>
                         <h2 className="text-xl font-bold text-white mb-2">No Orders Yet</h2>
                         <p className="text-slate-400 mb-6">
                             You haven&apos;t made any requests from this location.
@@ -108,75 +135,99 @@ export function LocationOrderHistory({ location, initialOrders }: LocationOrderH
                     </div>
                 ) : (
                     <div className="space-y-6">
-                        {/* Pending Orders */}
-                        {pendingOrders.length > 0 && (
+                        {/* Active Orders */}
+                        {activeOrders.length > 0 && (
                             <div>
                                 <h2 className="text-sm font-bold text-slate-400 uppercase tracking-wide mb-3">
-                                    Active Orders ({pendingOrders.length})
+                                    Active Orders ({activeOrders.length})
                                 </h2>
                                 <div className="space-y-3">
-                                    {pendingOrders.map(order => (
+                                    {activeOrders.map(order => (
                                         <div
                                             key={order.id}
                                             className="rounded-xl bg-slate-800 border border-slate-700 p-4"
                                         >
                                             <div className="flex items-start justify-between gap-2 mb-3">
-                                                <div>
-                                                    <p className="text-sm text-slate-400">
-                                                        {formatTimeAgo(order.createdAt)}
-                                                    </p>
-                                                </div>
+                                                <p className="text-sm text-slate-400">{formatTimeAgo(order.createdAt)}</p>
                                                 <span className={`rounded-full px-3 py-1 text-xs font-bold border ${statusColors[order.status]}`}>
                                                     {statusLabels[order.status]}
                                                 </span>
                                             </div>
-                                            <div className="rounded-lg bg-slate-900/50 p-3">
-                                                <ul className="space-y-1">
-                                                    {order.items.map(item => (
-                                                        <li key={item.id} className="flex justify-between text-sm">
-                                                            <span className="text-slate-300">{item.itemName}</span>
-                                                            <span className="font-bold text-white">x{item.quantity}</span>
-                                                        </li>
-                                                    ))}
-                                                </ul>
+                                            <div className="rounded-lg bg-slate-900/50 p-3 mb-3">
+                                                {order.customRequest ? (
+                                                    <p className="text-sm text-slate-200 whitespace-pre-wrap">{order.customRequest}</p>
+                                                ) : (
+                                                    <ul className="space-y-1">
+                                                        {order.items.map(item => (
+                                                            <li key={item.id} className="flex justify-between text-sm">
+                                                                <span className="text-slate-300">{item.itemName}</span>
+                                                                <span className="font-bold text-white">×{item.quantity}</span>
+                                                            </li>
+                                                        ))}
+                                                    </ul>
+                                                )}
                                             </div>
+                                            {/* Cancel controls */}
+                                            {confirmingCancelId === order.id ? (
+                                                <div className="flex gap-2">
+                                                    <button
+                                                        onClick={() => setConfirmingCancelId(null)}
+                                                        className="flex-1 rounded-lg border border-slate-600 bg-slate-700 py-2.5 text-sm font-bold text-slate-300 hover:bg-slate-600 active:scale-95 transition-all"
+                                                    >
+                                                        Keep Order
+                                                    </button>
+                                                    <button
+                                                        onClick={() => handleCancel(order.id)}
+                                                        className="flex-1 rounded-lg bg-red-600 py-2.5 text-sm font-bold text-white hover:bg-red-700 active:scale-95 transition-all"
+                                                    >
+                                                        Yes, Cancel It
+                                                    </button>
+                                                </div>
+                                            ) : (
+                                                <button
+                                                    onClick={() => setConfirmingCancelId(order.id)}
+                                                    className="w-full rounded-lg border border-red-800/50 bg-red-900/20 py-2.5 text-sm font-bold text-red-400 hover:bg-red-900/40 active:scale-95 transition-all"
+                                                >
+                                                    Cancel Order
+                                                </button>
+                                            )}
                                         </div>
                                     ))}
                                 </div>
                             </div>
                         )}
 
-                        {/* Completed Orders */}
-                        {completedOrders.length > 0 && (
+                        {/* Past Orders (done + cancelled) */}
+                        {pastOrders.length > 0 && (
                             <div>
                                 <h2 className="text-sm font-bold text-slate-400 uppercase tracking-wide mb-3">
-                                    Past Orders ({completedOrders.length})
+                                    Past Orders ({pastOrders.length})
                                 </h2>
                                 <div className="space-y-3">
-                                    {completedOrders.map(order => (
+                                    {pastOrders.map(order => (
                                         <div
                                             key={order.id}
-                                            className="rounded-xl bg-slate-800 border border-slate-700 p-4 opacity-75"
+                                            className={`rounded-xl bg-slate-800 border border-slate-700 p-4 ${order.status === 'cancelled' ? 'opacity-60' : 'opacity-75'}`}
                                         >
                                             <div className="flex items-start justify-between gap-2 mb-3">
-                                                <div>
-                                                    <p className="text-sm text-slate-400">
-                                                        {formatTimeAgo(order.createdAt)}
-                                                    </p>
-                                                </div>
+                                                <p className="text-sm text-slate-400">{formatTimeAgo(order.createdAt)}</p>
                                                 <span className={`rounded-full px-3 py-1 text-xs font-bold border ${statusColors[order.status]}`}>
                                                     {statusLabels[order.status]}
                                                 </span>
                                             </div>
                                             <div className="rounded-lg bg-slate-900/50 p-3">
-                                                <ul className="space-y-1">
-                                                    {order.items.map(item => (
-                                                        <li key={item.id} className="flex justify-between text-sm">
-                                                            <span className="text-slate-300">{item.itemName}</span>
-                                                            <span className="font-bold text-white">x{item.quantity}</span>
-                                                        </li>
-                                                    ))}
-                                                </ul>
+                                                {order.customRequest ? (
+                                                    <p className="text-sm text-slate-200 whitespace-pre-wrap">{order.customRequest}</p>
+                                                ) : (
+                                                    <ul className="space-y-1">
+                                                        {order.items.map(item => (
+                                                            <li key={item.id} className="flex justify-between text-sm">
+                                                                <span className="text-slate-300">{item.itemName}</span>
+                                                                <span className="font-bold text-white">×{item.quantity}</span>
+                                                            </li>
+                                                        ))}
+                                                    </ul>
+                                                )}
                                             </div>
                                         </div>
                                     ))}

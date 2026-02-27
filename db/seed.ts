@@ -62,16 +62,23 @@ async function seed() {
     const insertedItems = await db.insert(items).values(seedItems).returning();
     console.log(`Inserted ${insertedItems.length} items`);
 
-    // Seed locations: 12 Coffee Points + 1 Accreditation
+    // Seed locations: 11 Coffee Points (inventory) + text-based locations
     const seedLocations = [
-        ...Array.from({ length: 12 }, (_, i) => ({
+        ...Array.from({ length: 11 }, (_, i) => ({
             name: `Coffee Point ${i + 1}`,
             slug: `coffee-point-${i + 1}`,
+            type: 'inventory' as const,
         })),
         {
             name: 'Accreditation',
             slug: 'accreditation',
+            type: 'text' as const,
         },
+        ...Array.from({ length: 5 }, (_, i) => ({
+            name: `Info Point ${i + 1}`,
+            slug: `info-point-${i + 1}`,
+            type: 'text' as const,
+        })),
     ];
 
     const insertedLocations = await db.insert(locations).values(seedLocations).returning();

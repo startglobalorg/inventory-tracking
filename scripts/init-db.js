@@ -66,6 +66,43 @@ if (!dbExists) {
             console.log('orders.runner_id column: OK');
         }
 
+        // custom_request column on orders (text requests from non-inventory locations)
+        if (!orderCols.some(c => c.name === 'custom_request')) {
+            db.exec('ALTER TABLE orders ADD COLUMN custom_request TEXT');
+            console.log('orders.custom_request column: added');
+        } else {
+            console.log('orders.custom_request column: OK');
+        }
+
+        // type column on locations ('inventory' | 'text', defaults to 'inventory')
+        const locationCols = db.prepare('PRAGMA table_info(locations)').all();
+        if (!locationCols.some(c => c.name === 'type')) {
+            db.exec("ALTER TABLE locations ADD COLUMN type TEXT NOT NULL DEFAULT 'inventory'");
+            console.log('locations.type column: added');
+        } else {
+            console.log('locations.type column: OK');
+        }
+
+        // cancelled_by column on orders (set when a location cancels their own order)
+        if (!orderCols.some(c => c.name === 'cancelled_by')) {
+            db.exec('ALTER TABLE orders ADD COLUMN cancelled_by TEXT');
+            console.log('orders.cancelled_by column: added');
+        } else {
+            console.log('orders.cancelled_by column: OK');
+        }
+
+        // Fix Accreditation to use text-based request form
+        db.prepare("UPDATE locations SET type = 'text' WHERE slug = 'accreditation' AND type = 'inventory'").run();
+        console.log('locations.accreditation type: OK');
+
+        // Insert Info Points 1-5 (text type) if they don't exist
+        const insertLoc = db.prepare("INSERT OR IGNORE INTO locations (id, name, slug, type) VALUES (?, ?, ?, 'text')");
+        const { randomUUID } = require('crypto');
+        for (let i = 1; i <= 5; i++) {
+            insertLoc.run(randomUUID(), `Info Point ${i}`, `info-point-${i}`);
+        }
+        console.log('Info Points 1-5: OK');
+
         db.close();
         console.log('Schema migration complete!');
     } catch (error) {

@@ -91,6 +91,12 @@ export function InventoryList({ initialItems, mode = 'consume' }: { initialItems
                                     >
                                         Restock
                                     </Link>
+                                    <Link
+                                        href="/admin"
+                                        className="rounded-lg bg-grape px-3 sm:px-4 py-2 text-xs sm:text-sm font-semibold text-slate-400 border border-esbee hover:border-cerise hover:text-white"
+                                    >
+                                        Admin
+                                    </Link>
                                 </>
                             )}
                             {mode === 'restock' && (

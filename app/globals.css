@@ -1,3 +1,4 @@
+/* MODIFIED: Added premium button micro-interaction system */
 @import "tailwindcss";
 
 @theme {
@@ -29,4 +30,138 @@ body {
 
 .animate-slide-up {
   animation: slide-up 0.3s ease-out forwards;
+}
+
+/* =====================================================================
+   PREMIUM BUTTON MICRO-INTERACTION SYSTEM
+   Three layers: Elevation/Glow (hover) → Compression (active) → Ripple (click)
+
+   Targets two element types:
+     • <button> elements (non-disabled, non-.disabled, non-.no-premium)
+     • <a href> elements styled as buttons — identified by rounded-* class tokens
+       (covers Next.js <Link> components: navigation, Cancel, History, etc.)
+
+   Disabled buttons are fully exempt from all effects.
+   All transitions/animations are guarded by prefers-reduced-motion.
+   ===================================================================== */
+
+/* ── Ripple containment setup ────────────────────────────────────────────
+   position:relative and overflow:hidden are required for the absolutely-
+   positioned ripple element to be contained within button bounds.
+   Applied unconditionally (not inside motion media query) — layout-neutral. */
+button:not(:disabled):not(.disabled):not(.no-premium),
+a[href]:not(.no-premium):is(
+  [class~="rounded-lg"],
+  [class~="rounded-xl"],
+  [class~="rounded-md"],
+  [class~="rounded-full"]
+) {
+  position: relative;
+  overflow: hidden;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+
+  /* ── Base transition — spring ease-out ──────────────────────────────────
+     cubic-bezier(0.34, 1.56, 0.64, 1): overshoots slightly then settles,
+     simulating physical snap-back on release.
+
+     background-color / color / border-color / opacity are included at
+     Tailwind's default timing (150ms ease) to preserve the existing
+     hover:bg-* and hover:text-* color transitions that were previously
+     provided by transition-all / transition-colors classes.               */
+  button:not(:disabled):not(.disabled):not(.no-premium),
+  a[href]:not(.no-premium):is(
+    [class~="rounded-lg"],
+    [class~="rounded-xl"],
+    [class~="rounded-md"],
+    [class~="rounded-full"]
+  ) {
+    transition:
+      transform        350ms cubic-bezier(0.34, 1.56, 0.64, 1), /* spring overshoot: physical snap-back */
+      box-shadow       350ms cubic-bezier(0.34, 1.56, 0.64, 1),
+      background-color 150ms cubic-bezier(0.4, 0, 0.2, 1),      /* preserve Tailwind hover:bg-* */
+      color            150ms cubic-bezier(0.4, 0, 0.2, 1),      /* preserve Tailwind hover:text-* */
+      border-color     150ms cubic-bezier(0.4, 0, 0.2, 1),      /* preserve Tailwind hover:border-* */
+      opacity          150ms cubic-bezier(0.4, 0, 0.2, 1);      /* preserve opacity changes */
+  }
+
+  /* ── Layer 1: Hover — Elevation & Glow ──────────────────────────────────
+     Button lifts 5% off the surface. Shadow deepens (higher Y-offset, larger
+     blur). Soft white glow wraps the button edges at low opacity.
+
+     transform shorthand is used (per spec) rather than the individual scale
+     CSS property. scale: 1 additionally neutralizes Tailwind v4's individual
+     scale: .95 property (used by active:scale-95) in the hover state.       */
+  button:not(:disabled):not(.disabled):not(.no-premium):hover,
+  a[href]:not(.no-premium):is(
+    [class~="rounded-lg"],
+    [class~="rounded-xl"],
+    [class~="rounded-md"],
+    [class~="rounded-full"]
+  ):hover {
+    transform: scale(1.05);                      /* lift: button rises 5% off surface */
+    scale: 1;                                    /* neutralize Tailwind v4 individual scale property */
+    box-shadow:
+      0 8px 25px rgba(0, 0, 0, 0.5),           /* deepened shadow: increased Y-offset + blur */
+      0 0 20px rgba(255, 255, 255, 0.08);       /* soft neutral glow: low-opacity edge light */
+  }
+
+  /* ── Layer 2: Active — Tactile Compression ───────────────────────────────
+     Instantaneous downward push (≈80ms sharp deceleration).
+     Shadow shifts inward (reduced Y-offset, smaller blur) to simulate
+     the button being physically pressed into the surface.
+
+     Our unlayered CSS takes priority over Tailwind's @layer utilities,
+     so transform here overrides active:scale-95's transform value.
+     scale: 1 explicitly neutralizes Tailwind v4's individual scale: .95
+     property which would otherwise compose additively with our transform. */
+  button:not(:disabled):not(.disabled):not(.no-premium):active,
+  a[href]:not(.no-premium):is(
+    [class~="rounded-lg"],
+    [class~="rounded-xl"],
+    [class~="rounded-md"],
+    [class~="rounded-full"]
+  ):active {
+    transform: translateY(2px) scale(0.98);     /* depression + compression */
+    scale: 1;                                   /* override Tailwind v4 active:scale-* individual property */
+    box-shadow:
+      0 1px 3px rgba(0, 0, 0, 0.4),            /* inward shadow: depth recession */
+      0 0 0px rgba(255, 255, 255, 0);
+    /* Sharp deceleration: cubic-bezier(0.25, 0, 0.3, 1) — hard stop, no overshoot */
+    transition:
+      transform        80ms cubic-bezier(0.25, 0, 0.3, 1),  /* sharp decel: instant compression */
+      box-shadow       80ms cubic-bezier(0.25, 0, 0.3, 1),
+      background-color 80ms cubic-bezier(0.25, 0, 0.3, 1),
+      color            80ms cubic-bezier(0.25, 0, 0.3, 1),
+      border-color     80ms cubic-bezier(0.25, 0, 0.3, 1),
+      opacity          80ms cubic-bezier(0.25, 0, 0.3, 1);
+  }
+
+  /* ── Layer 3: Ripple — Click Confirmation ────────────────────────────────
+     Injected by PremiumButtonProvider on pointerdown. The ripple element is
+     pre-sized to ~250% of the target's largest dimension; animating scale 0→1
+     expands it to cover the button from any click origin point.
+     cubic-bezier(0.22, 1, 0.36, 1): fast expand, soft fade — kinetic release. */
+  @keyframes premium-ripple {
+    from {
+      scale: 0;
+      opacity: 0.35;
+    }
+    to {
+      scale: 1;    /* final rendered size = max(width, height) × 2.5 — set in JS */
+      opacity: 0;
+    }
+  }
+
+  .premium-ripple {
+    position: absolute;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.25);
+    pointer-events: none;
+    transform-origin: center;
+    /* 550ms duration. Element removed on animationend by PremiumButtonProvider. */
+    animation: premium-ripple 550ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  }
+
 }
