@@ -30,6 +30,12 @@ export function VolunteerRequestForm({ location, availableItems }: VolunteerRequ
     const [customInputValues, setCustomInputValues] = useState<Record<string, string>>({});
     // For text-type locations
     const [textRequest, setTextRequest] = useState('');
+    // For the Custom Request modal (available on all location types)
+    const [isCustomRequestOpen, setIsCustomRequestOpen] = useState(false);
+    const [customRequestText, setCustomRequestText] = useState('');
+    const [isCustomRequestSubmitting, setIsCustomRequestSubmitting] = useState(false);
+    const [customRequestError, setCustomRequestError] = useState<string | null>(null);
+    const [customRequestSuccess, setCustomRequestSuccess] = useState(false);
 
     const updateQuantity = (itemId: string, delta: number) => {
         setQuantities(prev => {
@@ -108,6 +114,27 @@ export function VolunteerRequestForm({ location, availableItems }: VolunteerRequ
         }
     };
 
+    const handleCustomRequestSubmit = async () => {
+        if (!customRequestText.trim() || isCustomRequestSubmitting) return;
+        setIsCustomRequestSubmitting(true);
+        setCustomRequestError(null);
+        const result = await submitVolunteerRequest(location.id, {}, customRequestText.trim());
+        setIsCustomRequestSubmitting(false);
+        if (result.success) {
+            setCustomRequestSuccess(true);
+            setCustomRequestText('');
+        } else {
+            setCustomRequestError(result.error || 'Failed to submit request');
+        }
+    };
+
+    const closeCustomRequest = () => {
+        setIsCustomRequestOpen(false);
+        setCustomRequestText('');
+        setCustomRequestError(null);
+        setCustomRequestSuccess(false);
+    };
+
     // Success screen (shared between inventory and text modes)
     if (isSuccess) {
         const isTextMode = location.type === 'text';
@@ -148,7 +175,13 @@ export function VolunteerRequestForm({ location, availableItems }: VolunteerRequ
                         subtitle={location.name}
                     />
                     <div className="bg-grape border-b border-esbee px-4 py-2">
-                        <div className="mx-auto max-w-lg flex items-center justify-end">
+                        <div className="mx-auto max-w-lg flex items-center justify-end gap-2">
+                            <button
+                                onClick={() => setIsCustomRequestOpen(true)}
+                                className="rounded-lg bg-grape border border-esbee px-3 py-2 text-xs font-semibold text-slate-300 hover:bg-esbee/30 hover:text-white transition-all"
+                            >
+                                Custom Request
+                            </button>
                             <Link
                                 href={`/request/${location.slug}/history`}
                                 className="rounded-lg bg-grape border border-esbee px-3 py-2 text-xs font-semibold text-slate-300 hover:bg-esbee/30 hover:text-white transition-all"
@@ -187,6 +220,18 @@ export function VolunteerRequestForm({ location, availableItems }: VolunteerRequ
                         {isSubmitting ? 'Submitting…' : 'Submit Request'}
                     </button>
                 </div>
+
+                {/* Custom Request Modal */}
+                {isCustomRequestOpen && <CustomRequestModal
+                    locationName={location.name}
+                    text={customRequestText}
+                    onTextChange={setCustomRequestText}
+                    onSubmit={handleCustomRequestSubmit}
+                    onClose={closeCustomRequest}
+                    isSubmitting={isCustomRequestSubmitting}
+                    error={customRequestError}
+                    success={customRequestSuccess}
+                />}
             </div>
         );
     }
@@ -211,7 +256,13 @@ export function VolunteerRequestForm({ location, availableItems }: VolunteerRequ
                     subtitle={location.name}
                 />
                 <div className="bg-grape border-b border-esbee px-4 py-2">
-                    <div className="mx-auto max-w-lg flex items-center justify-end">
+                    <div className="mx-auto max-w-lg flex items-center justify-end gap-2">
+                        <button
+                            onClick={() => setIsCustomRequestOpen(true)}
+                            className="rounded-lg bg-grape border border-esbee px-3 py-2 text-xs font-semibold text-slate-300 hover:bg-esbee/30 hover:text-white transition-all"
+                        >
+                            Custom Request
+                        </button>
                         <Link
                             href={`/request/${location.slug}/history`}
                             className="rounded-lg bg-grape border border-esbee px-3 py-2 text-xs font-semibold text-slate-300 hover:bg-esbee/30 hover:text-white transition-all"
@@ -365,6 +416,18 @@ export function VolunteerRequestForm({ location, availableItems }: VolunteerRequ
                 </div>
             </div>
 
+            {/* Custom Request Modal */}
+            {isCustomRequestOpen && <CustomRequestModal
+                locationName={location.name}
+                text={customRequestText}
+                onTextChange={setCustomRequestText}
+                onSubmit={handleCustomRequestSubmit}
+                onClose={closeCustomRequest}
+                isSubmitting={isCustomRequestSubmitting}
+                error={customRequestError}
+                success={customRequestSuccess}
+            />}
+
             {/* Review Modal */}
             {isReviewOpen && (
                 <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 backdrop-blur-sm p-4 sm:items-center">
@@ -440,6 +503,95 @@ export function VolunteerRequestForm({ location, availableItems }: VolunteerRequ
                     </div>
                 </div>
             )}
+        </div>
+    );
+}
+
+interface CustomRequestModalProps {
+    locationName: string;
+    text: string;
+    onTextChange: (v: string) => void;
+    onSubmit: () => void;
+    onClose: () => void;
+    isSubmitting: boolean;
+    error: string | null;
+    success: boolean;
+}
+
+function CustomRequestModal({
+    locationName,
+    text,
+    onTextChange,
+    onSubmit,
+    onClose,
+    isSubmitting,
+    error,
+    success,
+}: CustomRequestModalProps) {
+    return (
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 backdrop-blur-sm p-4 sm:items-center">
+            <div className="w-full max-w-md rounded-2xl bg-grape border border-esbee shadow-2xl animate-slide-up">
+                <div className="p-6">
+                    <div className="flex items-center justify-between mb-4">
+                        <div>
+                            <h2 className="text-xl font-bold text-white">Custom Request</h2>
+                            <p className="text-sm text-cerise">{locationName}</p>
+                        </div>
+                        <button onClick={onClose} className="text-slate-400 hover:text-white">
+                            <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                        </button>
+                    </div>
+
+                    {success ? (
+                        <div className="rounded-xl bg-green-900/50 border border-green-700 p-6 text-center">
+                            <div className="text-4xl mb-3">&#x2705;</div>
+                            <p className="font-bold text-white mb-1">Request Sent!</p>
+                            <p className="text-sm text-green-200 mb-4">The team has been notified.</p>
+                            <button
+                                onClick={onClose}
+                                className="rounded-lg bg-green-600 px-5 py-2 text-sm font-bold text-white hover:bg-green-700"
+                            >
+                                Done
+                            </button>
+                        </div>
+                    ) : (
+                        <>
+                            {error && (
+                                <div className="mb-3 rounded-lg bg-red-900/50 border border-red-700 p-3 text-red-200 text-sm">
+                                    {error}
+                                </div>
+                            )}
+                            <textarea
+                                value={text}
+                                onChange={(e) => onTextChange(e.target.value)}
+                                placeholder="Describe what you need…"
+                                rows={5}
+                                autoFocus
+                                className="w-full rounded-xl bg-night border border-esbee text-white text-base px-4 py-3 mb-4 focus:border-cerise focus:ring-1 focus:ring-cerise focus:outline-none resize-none placeholder:text-slate-500"
+                            />
+                            <div className="flex gap-3">
+                                <button
+                                    type="button"
+                                    onClick={onClose}
+                                    className="flex-1 rounded-lg bg-grape border border-esbee text-white font-semibold py-3 hover:bg-esbee/30"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={onSubmit}
+                                    disabled={!text.trim() || isSubmitting}
+                                    className="flex-[2] rounded-lg bg-cerise text-white font-bold py-3 hover:bg-jayouh disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                    {isSubmitting ? 'Sending…' : 'Send Request'}
+                                </button>
+                            </div>
+                        </>
+                    )}
+                </div>
+            </div>
         </div>
     );
 }
