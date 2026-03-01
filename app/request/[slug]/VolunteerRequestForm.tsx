@@ -168,7 +168,10 @@ export function VolunteerRequestForm({ location, availableItems }: VolunteerRequ
     // Text-mode layout (Accreditation, Info Points, etc.)
     if (location.type === 'text') {
         return (
-            <div className="min-h-dvh flex flex-col pb-[max(1.5rem,env(safe-area-inset-bottom))]">
+            <div
+            className="min-h-dvh flex flex-col pb-6"
+            style={{ paddingBottom: 'max(1.5rem, env(safe-area-inset-bottom))' }}
+        >
                 <div className="sticky top-0 z-10">
                     <BrandHeader
                         title="Request"
@@ -178,13 +181,13 @@ export function VolunteerRequestForm({ location, availableItems }: VolunteerRequ
                         <div className="mx-auto max-w-lg flex items-center justify-end gap-2">
                             <button
                                 onClick={() => setIsCustomRequestOpen(true)}
-                                className="rounded-lg bg-grape border border-esbee px-3 py-2 text-xs font-semibold text-slate-300 hover:bg-esbee/30 hover:text-white transition-all"
+                                className="rounded-lg bg-grape border border-esbee px-3 py-2 text-xs font-semibold text-slate-300 hover:bg-esbee/30 hover:text-white active:bg-esbee/50 active:scale-95 transition-all min-h-[44px] inline-flex items-center"
                             >
                                 Custom Request
                             </button>
                             <Link
                                 href={`/request/${location.slug}/history`}
-                                className="rounded-lg bg-grape border border-esbee px-3 py-2 text-xs font-semibold text-slate-300 hover:bg-esbee/30 hover:text-white transition-all"
+                                className="rounded-lg bg-grape border border-esbee px-3 py-2 text-xs font-semibold text-slate-300 hover:bg-esbee/30 hover:text-white active:bg-esbee/50 active:scale-95 transition-all min-h-[44px] inline-flex items-center"
                             >
                                 History
                             </Link>
@@ -259,13 +262,13 @@ export function VolunteerRequestForm({ location, availableItems }: VolunteerRequ
                     <div className="mx-auto max-w-lg flex items-center justify-end gap-2">
                         <button
                             onClick={() => setIsCustomRequestOpen(true)}
-                            className="rounded-lg bg-grape border border-esbee px-3 py-2 text-xs font-semibold text-slate-300 hover:bg-esbee/30 hover:text-white transition-all"
+                            className="rounded-lg bg-grape border border-esbee px-3 py-2 text-xs font-semibold text-slate-300 hover:bg-esbee/30 hover:text-white active:bg-esbee/50 active:scale-95 transition-all min-h-[44px] inline-flex items-center"
                         >
                             Custom Request
                         </button>
                         <Link
                             href={`/request/${location.slug}/history`}
-                            className="rounded-lg bg-grape border border-esbee px-3 py-2 text-xs font-semibold text-slate-300 hover:bg-esbee/30 hover:text-white transition-all"
+                            className="rounded-lg bg-grape border border-esbee px-3 py-2 text-xs font-semibold text-slate-300 hover:bg-esbee/30 hover:text-white active:bg-esbee/50 active:scale-95 transition-all min-h-[44px] inline-flex items-center"
                         >
                             History
                         </Link>
@@ -440,7 +443,7 @@ export function VolunteerRequestForm({ location, availableItems }: VolunteerRequ
                                 </div>
                                 <button
                                     onClick={() => setIsReviewOpen(false)}
-                                    className="text-slate-400 hover:text-white"
+                                    className="text-slate-400 hover:text-white active:text-white min-h-[44px] min-w-[44px] flex items-center justify-center"
                                 >
                                     <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -537,7 +540,7 @@ function CustomRequestModal({
                             <h2 className="text-xl font-bold text-white">Custom Request</h2>
                             <p className="text-sm text-cerise">{locationName}</p>
                         </div>
-                        <button onClick={onClose} className="text-slate-400 hover:text-white">
+                        <button onClick={onClose} className="text-slate-400 hover:text-white active:text-white min-h-[44px] min-w-[44px] flex items-center justify-center">
                             <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                             </svg>

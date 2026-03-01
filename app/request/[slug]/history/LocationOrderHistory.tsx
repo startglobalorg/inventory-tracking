@@ -115,7 +115,7 @@ export function LocationOrderHistory({ location, initialOrders }: LocationOrderH
                 {cancelError && (
                     <div className="mb-4 flex items-center justify-between rounded-lg bg-red-900/50 border border-red-700 p-3 text-sm text-red-200">
                         <span>{cancelError}</span>
-                        <button onClick={() => setCancelError(null)} className="ml-3 text-red-400 hover:text-red-200">✕</button>
+                        <button onClick={() => setCancelError(null)} className="ml-3 text-red-400 hover:text-red-200 active:text-red-100 min-h-[44px] min-w-[44px] flex items-center justify-center">✕</button>
                     </div>
                 )}
 
@@ -172,13 +172,13 @@ export function LocationOrderHistory({ location, initialOrders }: LocationOrderH
                                                 <div className="flex gap-2">
                                                     <button
                                                         onClick={() => setConfirmingCancelId(null)}
-                                                        className="flex-1 rounded-lg border border-slate-600 bg-slate-700 py-2.5 text-sm font-bold text-slate-300 hover:bg-slate-600 active:scale-95 transition-all"
+                                                        className="flex-1 rounded-lg border border-slate-600 bg-slate-700 py-2.5 text-sm font-bold text-slate-300 hover:bg-slate-600 active:scale-95 transition-all min-h-[44px]"
                                                     >
                                                         Keep Order
                                                     </button>
                                                     <button
                                                         onClick={() => handleCancel(order.id)}
-                                                        className="flex-1 rounded-lg bg-red-600 py-2.5 text-sm font-bold text-white hover:bg-red-700 active:scale-95 transition-all"
+                                                        className="flex-1 rounded-lg bg-red-600 py-2.5 text-sm font-bold text-white hover:bg-red-700 active:scale-95 transition-all min-h-[44px]"
                                                     >
                                                         Yes, Cancel It
                                                     </button>
@@ -186,7 +186,7 @@ export function LocationOrderHistory({ location, initialOrders }: LocationOrderH
                                             ) : (
                                                 <button
                                                     onClick={() => setConfirmingCancelId(order.id)}
-                                                    className="w-full rounded-lg border border-red-800/50 bg-red-900/20 py-2.5 text-sm font-bold text-red-400 hover:bg-red-900/40 active:scale-95 transition-all"
+                                                    className="w-full rounded-lg border border-red-800/50 bg-red-900/20 py-2.5 text-sm font-bold text-red-400 hover:bg-red-900/40 active:scale-95 transition-all min-h-[44px]"
                                                 >
                                                     Cancel Order
                                                 </button>

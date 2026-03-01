@@ -1,6 +1,13 @@
 /* MODIFIED: Added premium button micro-interaction system */
 @import "tailwindcss";
 
+/* Explicit source paths — ensures Tailwind CSS 4's scanner picks up all
+   component files during production builds (Docker/standalone), where the
+   auto-detection base path may resolve relative to this CSS file rather
+   than the project root, causing co-located components to be missed.   */
+@source "../app/**/*.{ts,tsx,js,jsx}";
+@source "../components/**/*.{ts,tsx,js,jsx}";
+
 @theme {
   --color-night: #0a0a0a;
   --color-grape: #171717;

@@ -23,6 +23,7 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
+  maximumScale: 5, // allow user zoom up to 5× (accessibility — do NOT use 1)
   viewportFit: 'cover', // enables env(safe-area-inset-*) for iPhone notch/home bar
 };
 
