@@ -5,6 +5,7 @@ services:
       context: .
       dockerfile: Dockerfile
     image: inventory-app:latest
+    pull_policy: build
     restart: always
     ports:
       - "3001:3000"
