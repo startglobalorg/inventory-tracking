@@ -1,15 +1,12 @@
-// MODIFIED: Extended to handle button-styled <Link> anchor elements in addition to <button>.
-// A single document-level listener covers all pages without per-component changes.
 'use client';
 
 import { useEffect } from 'react';
 
 /**
  * CSS selector matching all premium-eligible interactive elements:
- * - <button> elements that are not disabled / .disabled / .no-premium
- * - <a href> elements styled as buttons (identified by rounded-* class token)
- *   This covers Next.js <Link> components used as navigation buttons throughout
- *   the app (+ Add, Orders, History, Restock, Cancel, Admin, etc.)
+ * - <button> elements (non-disabled, non-.disabled, non-.no-premium)
+ * - <a href> elements styled as buttons (rounded-* class token present)
+ *   Covers Next.js <Link> components used as navigation buttons.
  */
 const BUTTON_SELECTOR =
   'button:not(:disabled):not(.disabled):not(.no-premium)';
@@ -20,37 +17,29 @@ const ANCHOR_SELECTOR =
 const PREMIUM_SELECTOR = `${BUTTON_SELECTOR}, ${ANCHOR_SELECTOR}`;
 
 /**
- * Injects a ripple element at the exact pointer coordinates within an element.
- * The ripple is pre-sized to ~250% of the element's largest dimension so that
- * animating CSS scale from 0→1 produces the correct final spread radius,
- * covering the entire button surface from any click origin point.
- * The DOM element is auto-removed via animationend to prevent accumulation.
+ * Injects a ripple element at the exact interaction coordinates within an element.
+ * Pre-sized to ~250% of the element's largest dimension so that CSS scale 0→1
+ * animation covers the entire button surface from any origin point.
+ * Auto-removed via animationend to prevent DOM accumulation.
  */
 function attachRipple(el: HTMLElement, clientX: number, clientY: number): void {
   const rect = el.getBoundingClientRect();
-
-  // Size the ripple to 250% of the button's largest dimension (pre-scaled for 0→1 animation)
   const size = Math.max(rect.width, rect.height) * 2.5;
 
   const ripple = document.createElement('span');
   ripple.className = 'premium-ripple';
-
-  // Center the ripple circle on the exact click point (within element bounds)
   ripple.style.width = `${size}px`;
   ripple.style.height = `${size}px`;
   ripple.style.left = `${clientX - rect.left - size / 2}px`;
   ripple.style.top = `${clientY - rect.top - size / 2}px`;
 
   el.appendChild(ripple);
-
-  // Auto-remove after animation ends to prevent DOM bloat on rapid clicking
   ripple.addEventListener('animationend', () => ripple.remove(), { once: true });
 }
 
 /**
- * Ensures a button-styled <a> element can properly contain the absolutely-
- * positioned ripple. CSS `overflow: hidden` does not clip reliably on
- * display:inline elements — setting display:inline-block fixes this.
+ * Ensures a button-styled <a> element can contain the absolutely-positioned
+ * ripple. CSS overflow:hidden doesn't clip reliably on display:inline elements.
  * Idempotent via data-premium-init flag.
  */
 function ensureBlockDisplay(el: HTMLElement): void {
@@ -61,43 +50,75 @@ function ensureBlockDisplay(el: HTMLElement): void {
   }
 }
 
+function isReducedMotion(): boolean {
+  return (
+    typeof window !== 'undefined' &&
+    window.matchMedia != null &&
+    window.matchMedia('(prefers-reduced-motion: reduce)').matches
+  );
+}
+
 /**
- * Mounts a single document-level pointerdown handler that triggers ripple
- * effects on all premium-eligible buttons and button-styled links.
+ * Mounts interaction handlers for ripple effects on all eligible buttons and
+ * button-styled links across the entire app.
  *
- * On mount also scans existing anchor-buttons to pre-set display:inline-block,
- * ensuring the first ripple on any link is properly clipped. New elements added
- * after mount (SPA navigation, modals) are handled lazily on first interaction.
+ * Browser compatibility:
+ * - Prefers pointerdown (unified mouse + touch, all modern browsers).
+ * - Falls back to touchstart + mousedown on browsers without PointerEvent
+ *   (iOS Safari < 13, some older Firefox Mobile versions).
+ * - Both paths are passive where possible to not block scrolling.
  */
 export default function PremiumButtonProvider(): null {
   useEffect(() => {
     // Pre-initialize existing button-styled anchors for ripple containment
     document.querySelectorAll<HTMLElement>(ANCHOR_SELECTOR).forEach(ensureBlockDisplay);
 
-    const handlePointerDown = (event: PointerEvent): void => {
-      // Respect prefers-reduced-motion — no ripple for users who opt out of motion
-      if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    function handleInteraction(clientX: number, clientY: number, target: EventTarget | null): void {
+      if (isReducedMotion()) return;
+      if (!(target instanceof Element)) return;
 
-      const target = event.target as Element;
-
-      // Walk up the DOM to find the nearest premium-eligible interactive element
       const el = target.closest<HTMLElement>(PREMIUM_SELECTOR);
       if (!el) return;
-
-      // Guard against disabled state at interaction time (state may change after mount)
       if (el instanceof HTMLButtonElement && el.disabled) return;
       if (el.classList.contains('disabled')) return;
 
-      // For anchor elements: ensure proper block display for overflow clipping
-      if (el.tagName === 'A') {
-        ensureBlockDisplay(el);
-      }
+      if (el.tagName === 'A') ensureBlockDisplay(el);
+      attachRipple(el, clientX, clientY);
+    }
 
-      attachRipple(el, event.clientX, event.clientY);
+    // ── Primary path: PointerEvent (Chrome, Firefox, Safari 13+) ──────────
+    if (window.PointerEvent) {
+      const onPointerDown = (e: PointerEvent) =>
+        handleInteraction(e.clientX, e.clientY, e.target);
+
+      document.addEventListener('pointerdown', onPointerDown);
+      return () => document.removeEventListener('pointerdown', onPointerDown);
+    }
+
+    // ── Fallback: touchstart + mousedown (older Safari, legacy browsers) ───
+    // touchstart fires before mousedown; track the last touch to skip the
+    // subsequent synthetic mousedown that mobile browsers fire after touch.
+    let lastTouchEnd = 0;
+
+    const onTouchStart = (e: TouchEvent) => {
+      lastTouchEnd = Date.now();
+      const touch = e.touches[0];
+      if (touch) handleInteraction(touch.clientX, touch.clientY, e.target);
     };
 
-    document.addEventListener('pointerdown', handlePointerDown);
-    return () => document.removeEventListener('pointerdown', handlePointerDown);
+    const onMouseDown = (e: MouseEvent) => {
+      // Skip synthetic mouse events fired after touch (within 500ms)
+      if (Date.now() - lastTouchEnd < 500) return;
+      handleInteraction(e.clientX, e.clientY, e.target);
+    };
+
+    document.addEventListener('touchstart', onTouchStart, { passive: true });
+    document.addEventListener('mousedown', onMouseDown);
+
+    return () => {
+      document.removeEventListener('touchstart', onTouchStart);
+      document.removeEventListener('mousedown', onMouseDown);
+    };
   }, []);
 
   return null;

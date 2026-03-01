@@ -139,7 +139,7 @@ export function VolunteerRequestForm({ location, availableItems }: VolunteerRequ
     if (isSuccess) {
         const isTextMode = location.type === 'text';
         return (
-            <div className="p-4 min-h-[100dvh] flex items-center justify-center">
+            <div className="p-4 min-h-dvh flex items-center justify-center">
                 <div className="mx-auto max-w-lg w-full">
                     <div className="rounded-xl bg-green-900/50 border border-green-700 p-8 text-center">
                         <div className="mb-4 text-6xl">
@@ -168,7 +168,7 @@ export function VolunteerRequestForm({ location, availableItems }: VolunteerRequ
     // Text-mode layout (Accreditation, Info Points, etc.)
     if (location.type === 'text') {
         return (
-            <div className="min-h-[100dvh] flex flex-col pb-[max(1.5rem,env(safe-area-inset-bottom))]">
+            <div className="min-h-dvh flex flex-col pb-[max(1.5rem,env(safe-area-inset-bottom))]">
                 <div className="sticky top-0 z-10">
                     <BrandHeader
                         title="Request"

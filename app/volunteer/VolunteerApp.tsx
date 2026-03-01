@@ -173,8 +173,8 @@ export function VolunteerApp({ runners, currentRunner, unassigned, myOrders }: V
     // ---- Login View ----
     if (!currentRunner) {
         return (
-            // min-h-[100dvh] accounts for mobile browser chrome (address bar show/hide)
-            <main className="min-h-[100dvh] bg-night flex flex-col justify-center px-4 py-8">
+            // min-h-dvh: 100vh fallback + 100dvh override (accounts for mobile browser chrome)
+            <main className="min-h-dvh bg-night flex flex-col justify-center px-4 py-8">
                 <div className="w-full max-w-sm mx-auto space-y-5">
                     <div className="text-center mb-2">
                         <h1 className="text-2xl font-bold text-white">Volunteer Login</h1>
@@ -241,7 +241,7 @@ export function VolunteerApp({ runners, currentRunner, unassigned, myOrders }: V
 
     // ---- Dashboard View ----
     return (
-        <main className="min-h-[100dvh] bg-night flex flex-col">
+        <main className="min-h-dvh bg-night flex flex-col">
             {/* Sticky header — accounts for iOS notch with pt-safe if needed */}
             <div className="sticky top-0 z-10 border-b border-esbee bg-grape px-4 py-3">
                 <div className="flex items-center justify-between gap-3">
