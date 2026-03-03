@@ -88,6 +88,7 @@ export function VolunteerApp({ runners, currentRunner, unassigned, myOrders }: V
     const [myOrdersList, setMyOrdersList] = useState<OrderWithDetails[]>(myOrders);
     const [view, setView] = useState<'mine' | 'available'>('mine');
     const [confirmingId, setConfirmingId] = useState<string | null>(null);
+    const [claimingId, setClaimingId] = useState<string | null>(null);
     const [doneError, setDoneError] = useState<string | null>(null);
 
     // Live polling — call server actions directly, no page reload
@@ -141,6 +142,8 @@ export function VolunteerApp({ runners, currentRunner, unassigned, myOrders }: V
         if (!currentRunner) return;
         const order = unassignedOrders.find(o => o.id === orderId);
         if (!order) return;
+
+        setClaimingId(null);
 
         // Optimistic update
         setUnassignedOrders(prev => prev.filter(o => o.id !== orderId));
@@ -242,6 +245,30 @@ export function VolunteerApp({ runners, currentRunner, unassigned, myOrders }: V
     // ---- Dashboard View ----
     return (
         <main className="min-h-dvh bg-night flex flex-col">
+            {/* Claim confirmation modal */}
+            {claimingId && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center px-6">
+                    <div className="absolute inset-0 bg-black/70" onClick={() => setClaimingId(null)} />
+                    <div className="relative w-full max-w-sm rounded-2xl border border-esbee bg-grape p-6 shadow-xl space-y-5">
+                        <p className="text-base font-bold text-white text-center">Claim this order?</p>
+                        <p className="text-sm text-slate-300 text-center">Are you sure you want to claim this order? This action can not be undone.</p>
+                        <div className="flex gap-3">
+                            <button
+                                onClick={() => setClaimingId(null)}
+                                className="flex-1 rounded-xl border border-esbee bg-night py-3.5 text-sm font-bold text-slate-300 hover:bg-esbee/20 active:scale-95 transition-all"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={() => handleClaim(claimingId)}
+                                className="flex-1 rounded-xl bg-violet-accent py-3.5 text-sm font-bold text-white hover:bg-violet-accent/80 active:scale-95 transition-all"
+                            >
+                                Confirm
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
             {/* Sticky header — accounts for iOS notch with pt-safe if needed */}
             <div className="sticky top-0 z-10 border-b border-esbee bg-grape px-4 py-3">
                 <div className="flex items-center justify-between gap-3">
@@ -377,7 +404,7 @@ export function VolunteerApp({ runners, currentRunner, unassigned, myOrders }: V
                                     order={order}
                                     action={
                                         <button
-                                            onClick={() => handleClaim(order.id)}
+                                            onClick={() => setClaimingId(order.id)}
                                             className="w-full rounded-lg bg-violet-accent py-3.5 text-sm font-bold text-white hover:bg-violet-accent/80 active:scale-95 transition-all"
                                         >
                                             Claim Order

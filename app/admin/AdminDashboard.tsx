@@ -6,7 +6,7 @@ import { deleteRunner, getRunners } from '@/app/actions/runners';
 import type { Runner } from '@/db/schema';
 import { BrandHeader } from '@/components/BrandHeader';
 
-export function AdminDashboard({ initialRunners }: { initialRunners: Runner[] }) {
+export function AdminDashboard({ initialRunners, orderCounts }: { initialRunners: Runner[]; orderCounts: Record<string, { open: number; total: number }> }) {
     const [runnerList, setRunnerList] = useState(initialRunners);
     const [confirmingId, setConfirmingId] = useState<string | null>(null);
     const [error, setError] = useState<string | null>(null);
@@ -87,6 +87,15 @@ export function AdminDashboard({ initialRunners }: { initialRunners: Runner[] })
                                     <p className="text-xs text-slate-400">
                                         Registered {runner.createdAt.toLocaleDateString()}
                                     </p>
+                                    <div className="mt-1 flex items-center gap-3">
+                                        <span className="text-xs text-jayouh font-semibold">
+                                            {orderCounts[runner.id]?.open ?? 0} open
+                                        </span>
+                                        <span className="text-xs text-slate-500">·</span>
+                                        <span className="text-xs text-slate-400">
+                                            {orderCounts[runner.id]?.total ?? 0} total
+                                        </span>
+                                    </div>
                                 </div>
 
                                 {confirmingId === runner.id ? (

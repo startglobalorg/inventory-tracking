@@ -272,6 +272,28 @@ export async function getRunnerOrders(runnerId: string) {
     }
 }
 
+export async function getRunnerOrderCounts(): Promise<Record<string, { open: number; total: number }>> {
+    try {
+        const rows = await db
+            .select({
+                runnerId: orders.runnerId,
+                open: sql<number>`sum(case when ${orders.status} != 'done' then 1 else 0 end)`,
+                total: sql<number>`count(*)`,
+            })
+            .from(orders)
+            .where(sql`${orders.runnerId} is not null`)
+            .groupBy(orders.runnerId);
+
+        const result: Record<string, { open: number; total: number }> = {};
+        for (const row of rows) {
+            if (row.runnerId) result[row.runnerId] = { open: Number(row.open), total: Number(row.total) };
+        }
+        return result;
+    } catch {
+        return {};
+    }
+}
+
 // Deduct stock for all order items and mark the order as done in one transaction.
 // Used when a delivery volunteer completes an order directly (no cart flow).
 export async function completeVolunteerOrder(orderId: string, volunteerName: string) {

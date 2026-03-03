@@ -58,8 +58,8 @@ export function InventoryList({ initialItems, mode = 'consume' }: { initialItems
             {/* Sticky Header */}
             <header className="sticky top-0 z-40 border-b border-esbee bg-night/95 backdrop-blur-sm">
                 <BrandHeader
-                    title={mode === 'restock' ? 'Supplier Restock' : 'Inventory Management'}
-                    subtitle="☕ Coffee Point"
+                    title={mode === 'restock' ? 'Supplier Restock' : 'Logistics Management'}
+                    subtitle="Summit x Hack 2026"
                 />
                 <div className="container mx-auto px-4 py-4">
                     {/* Nav row */}
