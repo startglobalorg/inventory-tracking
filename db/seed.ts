@@ -79,6 +79,11 @@ async function seed() {
             slug: `info-point-${i + 1}`,
             type: 'text' as const,
         })),
+        {
+            name: 'Speaker Lounge',
+            slug: 'speaker-lounge',
+            type: 'text' as const,
+        },
     ];
 
     const insertedLocations = await db.insert(locations).values(seedLocations).returning();

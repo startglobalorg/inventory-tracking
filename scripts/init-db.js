@@ -103,6 +103,10 @@ if (!dbExists) {
         }
         console.log('Info Points 1-5: OK');
 
+        // Insert Speaker Lounge (text type) if it doesn't exist
+        insertLoc.run(randomUUID(), 'Speaker Lounge', 'speaker-lounge');
+        console.log('Speaker Lounge: OK');
+
         db.close();
         console.log('Schema migration complete!');
     } catch (error) {

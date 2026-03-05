@@ -11,6 +11,7 @@ async function seedLocations() {
             slug: `coffee-point-${i + 1}`,
         })),
         { name: 'Accreditation', slug: 'accreditation' },
+        { name: 'Speaker Lounge', slug: 'speaker-lounge' },
     ];
 
     for (const loc of seedLocations) {
