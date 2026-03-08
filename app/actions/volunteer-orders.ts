@@ -2,7 +2,7 @@
 
 import { db } from '@/db/db';
 import { locations, orders, orderItems, items, runners } from '@/db/schema';
-import { eq, asc, desc, gt, inArray } from 'drizzle-orm';
+import { eq, asc, desc, gt, inArray, or, isNull, and } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
 
 // Types
@@ -86,9 +86,9 @@ export async function createLocation(name: string, slug: string) {
 
 // Item Actions (for volunteer view)
 
-export async function getAvailableItems() {
+export async function getAvailableItems(locationSlug: string) {
     try {
-        // Single query: get items with stock > 0, excluding exact stock numbers
+        // Get items with stock > 0 that are either unrestricted or restricted to this location
         const inStockItems = await db
             .select({
                 id: items.id,
@@ -100,7 +100,12 @@ export async function getAvailableItems() {
                 coldStorage: items.coldStorage,
             })
             .from(items)
-            .where(gt(items.stock, 0))
+            .where(
+                and(
+                    gt(items.stock, 0),
+                    or(isNull(items.restrictedToLocationSlug), eq(items.restrictedToLocationSlug, locationSlug))
+                )
+            )
             .orderBy(asc(items.category), asc(items.name));
 
         return { success: true, data: inStockItems };

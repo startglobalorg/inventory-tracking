@@ -13,7 +13,7 @@ export default async function VolunteerRequestPage({
 
     const [locationResult, itemsResult] = await Promise.all([
         getLocationBySlug(slug),
-        getAvailableItems(),
+        getAvailableItems(slug),
     ]);
 
     if (!locationResult.success || !locationResult.data) {

@@ -61,6 +61,7 @@ export async function createItem(formData: {
     category: string;
     quantityPerUnit: number;
     unitName: string;
+    restrictedToLocationSlug?: string | null;
 }) {
     try {
         // Validate numeric fields
@@ -100,6 +101,7 @@ export async function updateItem(itemId: string, formData: {
     category: string;
     quantityPerUnit: number;
     unitName: string;
+    restrictedToLocationSlug?: string | null;
 }) {
     try {
         // Validate numeric fields

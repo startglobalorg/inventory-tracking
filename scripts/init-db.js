@@ -107,6 +107,22 @@ if (!dbExists) {
         insertLoc.run(randomUUID(), 'Speaker Lounge', 'speaker-lounge');
         console.log('Speaker Lounge: OK');
 
+        // restricted_to_location_slug column on items
+        const itemCols = db.prepare('PRAGMA table_info(items)').all();
+        if (!itemCols.some(c => c.name === 'restricted_to_location_slug')) {
+            db.exec('ALTER TABLE items ADD COLUMN restricted_to_location_slug TEXT');
+            console.log('items.restricted_to_location_slug column: added');
+        } else {
+            console.log('items.restricted_to_location_slug column: OK');
+        }
+
+        // Insert Bio Energy Shot (100ml) by SuddenRush, restricted to coffee-point-1
+        db.prepare(`
+            INSERT OR IGNORE INTO items (id, name, sku, stock, min_threshold, category, quantity_per_unit, unit_name, restricted_to_location_slug, cold_storage, created_at)
+            VALUES (?, ?, ?, 0, 0, 'Energy Drinks', 1, 'unit', 'coffee-point-1', 0, unixepoch())
+        `).run(randomUUID(), 'Bio Energy Shot (100ml)', 'ENERGYDR-BIOENERGYSHOT-100');
+        console.log('Bio Energy Shot (SuddenRush): OK');
+
         db.close();
         console.log('Schema migration complete!');
     } catch (error) {

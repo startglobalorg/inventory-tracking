@@ -59,7 +59,20 @@ async function seed() {
         },
     ];
 
-    const insertedItems = await db.insert(items).values(seedItems).returning();
+    const insertedItems = await db.insert(items).values([
+        ...seedItems,
+        {
+            name: 'Bio Energy Shot (100ml)',
+            sku: 'ENERGYDR-BIOENERGYSHOT-100',
+            stock: 0,
+            minThreshold: 0,
+            category: 'Energy Drinks',
+            quantityPerUnit: 1,
+            unitName: 'unit',
+            coldStorage: false,
+            restrictedToLocationSlug: 'coffee-point-1',
+        },
+    ]).returning();
     console.log(`Inserted ${insertedItems.length} items`);
 
     // Seed locations: 11 Coffee Points (inventory) + text-based locations

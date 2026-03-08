@@ -4,6 +4,8 @@ import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { createItem } from '@/app/actions';
+import { getLocations } from '@/app/actions/volunteer-orders';
+import type { Location } from '@/db/schema';
 
 const CATEGORIES = [
     'Energy Drinks',
@@ -62,11 +64,13 @@ const BRANDS = [
     'Kägi',
     'Remedy',
     'Seeberger',
+    'SuddenRush',
     'Unbranded'
 ];
 
 export default function AddItemPage() {
     const router = useRouter();
+    const [locations, setLocations] = useState<Location[]>([]);
     const [formData, setFormData] = useState({
         name: '',
         brand: '',
@@ -76,7 +80,12 @@ export default function AddItemPage() {
         category: '',
         quantityPerUnit: 1,
         coldStorage: false,
+        restrictedToLocationSlug: '',
     });
+
+    useEffect(() => {
+        getLocations().then(r => { if (r.success && r.data) setLocations(r.data); });
+    }, []);
     const [error, setError] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [showCustomCategory, setShowCustomCategory] = useState(false);
@@ -136,7 +145,8 @@ export default function AddItemPage() {
         const result = await createItem({
             ...formData,
             sku: generatedSKU,
-            unitName: 'unit', // Default value since we removed the field
+            unitName: 'unit',
+            restrictedToLocationSlug: formData.restrictedToLocationSlug || null,
         });
 
         if (result.success) {
@@ -425,6 +435,25 @@ export default function AddItemPage() {
                                 </span>
                             </label>
                             <p className="mt-1 text-xs text-slate-500 ml-8">Check if this item requires refrigeration</p>
+                        </div>
+
+                        {/* Location Restriction */}
+                        <div>
+                            <label htmlFor="restrictedToLocationSlug" className="block text-sm font-semibold text-white mb-2">
+                                Restrict to Location
+                            </label>
+                            <select
+                                id="restrictedToLocationSlug"
+                                value={formData.restrictedToLocationSlug}
+                                onChange={(e) => setFormData({ ...formData, restrictedToLocationSlug: e.target.value })}
+                                className="w-full rounded-lg bg-grape border border-esbee text-white px-4 py-3 focus:ring-2 focus:ring-cerise focus:border-transparent"
+                            >
+                                <option value="">All locations (no restriction)</option>
+                                {locations.map(loc => (
+                                    <option key={loc.slug} value={loc.slug}>{loc.name}</option>
+                                ))}
+                            </select>
+                            <p className="mt-1 text-xs text-slate-500">If set, only this location can order this item</p>
                         </div>
                     </div>
 

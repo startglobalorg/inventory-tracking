@@ -19,6 +19,9 @@ export const items = sqliteTable('items', {
     // Cold storage designation
     coldStorage: integer('cold_storage', { mode: 'boolean' }).notNull().default(sql`0`),
 
+    // If set, only this location slug can see/order this item
+    restrictedToLocationSlug: text('restricted_to_location_slug'),
+
     createdAt: integer('created_at', { mode: 'timestamp' })
         .notNull()
         .default(sql`(unixepoch())`),

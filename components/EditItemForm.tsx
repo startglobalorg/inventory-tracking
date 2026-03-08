@@ -1,10 +1,11 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { updateItem, deleteItem } from '@/app/actions';
+import { getLocations } from '@/app/actions/volunteer-orders';
 import { useToast } from './ToastProvider';
-import type { Item } from '@/db/schema';
+import type { Item, Location } from '@/db/schema';
 import Link from 'next/link';
 
 export function EditItemForm({ item }: { item: Item }) {
@@ -13,6 +14,11 @@ export function EditItemForm({ item }: { item: Item }) {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+    const [locations, setLocations] = useState<Location[]>([]);
+
+    useEffect(() => {
+        getLocations().then(r => { if (r.success && r.data) setLocations(r.data); });
+    }, []);
 
     const [formData, setFormData] = useState({
         name: item.name,
@@ -24,6 +30,7 @@ export function EditItemForm({ item }: { item: Item }) {
         quantityPerUnit: item.quantityPerUnit || 1,
         unitName: item.unitName || 'unit',
         coldStorage: item.coldStorage || false,
+        restrictedToLocationSlug: item.restrictedToLocationSlug || '',
     });
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -31,7 +38,10 @@ export function EditItemForm({ item }: { item: Item }) {
         setIsSubmitting(true);
 
         try {
-            const result = await updateItem(item.id, formData);
+            const result = await updateItem(item.id, {
+                ...formData,
+                restrictedToLocationSlug: formData.restrictedToLocationSlug || null,
+            });
 
             if (result.success) {
                 showToast('Item updated successfully!', 'success');
@@ -198,6 +208,25 @@ export function EditItemForm({ item }: { item: Item }) {
                             </span>
                         </label>
                         <p className="mt-1 text-xs text-slate-500 ml-8">Check if this item requires refrigeration</p>
+                    </div>
+
+                    {/* Location Restriction */}
+                    <div>
+                        <label htmlFor="restrictedToLocationSlug" className="block text-sm font-medium text-slate-300 mb-2">
+                            Restrict to Location
+                        </label>
+                        <select
+                            id="restrictedToLocationSlug"
+                            value={formData.restrictedToLocationSlug}
+                            onChange={(e) => setFormData({ ...formData, restrictedToLocationSlug: e.target.value })}
+                            className="w-full rounded-lg border border-esbee bg-grape px-4 py-2.5 text-white focus:border-cerise focus:outline-none focus:ring-2 focus:ring-cerise/20"
+                        >
+                            <option value="">All locations (no restriction)</option>
+                            {locations.map(loc => (
+                                <option key={loc.slug} value={loc.slug}>{loc.name}</option>
+                            ))}
+                        </select>
+                        <p className="mt-1 text-xs text-slate-500">If set, only this location can order this item</p>
                     </div>
                 </div>
 
