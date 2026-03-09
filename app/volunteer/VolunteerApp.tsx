@@ -90,6 +90,7 @@ export function VolunteerApp({ runners, currentRunner, unassigned, myOrders }: V
     const [confirmingId, setConfirmingId] = useState<string | null>(null);
     const [claimingId, setClaimingId] = useState<string | null>(null);
     const [doneError, setDoneError] = useState<string | null>(null);
+    const [showMap, setShowMap] = useState(false);
 
     // Live polling — call server actions directly, no page reload
     useEffect(() => {
@@ -285,6 +286,27 @@ export function VolunteerApp({ runners, currentRunner, unassigned, myOrders }: V
                 </div>
             </div>
 
+            {/* Map modal */}
+            {showMap && (
+                <div className="fixed inset-0 z-50 flex flex-col">
+                    <div className="flex items-center justify-between gap-3 border-b border-esbee bg-grape px-4 py-3">
+                        <p className="font-bold text-white">Summit Map</p>
+                        <button
+                            onClick={() => setShowMap(false)}
+                            className="rounded-lg border border-esbee bg-night px-3 py-2 text-sm font-medium text-slate-300 hover:bg-esbee/30 active:scale-95 transition-all"
+                        >
+                            Close
+                        </button>
+                    </div>
+                    <iframe
+                        title="Mappedin Map"
+                        allow="clipboard-write 'self' https://app.mappedin.com; web-share 'self' https://app.mappedin.com"
+                        src="https://app.mappedin.com/map/67cf061db18950000b2d6ac2?embedded=true"
+                        className="flex-1 w-full border-0"
+                    />
+                </div>
+            )}
+
             {view === 'mine' ? (
                 /* ---- My Orders view ---- */
                 // pb accounts for iOS home bar (safe-area-inset-bottom) plus regular spacing
@@ -311,6 +333,14 @@ export function VolunteerApp({ runners, currentRunner, unassigned, myOrders }: V
                                 </span>
                             )}
                         </h2>
+                        <div className="flex items-center gap-2">
+                        {/* Map button */}
+                        <button
+                            onClick={() => setShowMap(true)}
+                            className="rounded-lg border border-esbee bg-night px-3 py-2 text-sm font-semibold text-slate-300 hover:bg-esbee/20 active:scale-95 transition-all"
+                        >
+                            Map
+                        </button>
                         {/* Available button — always shown so volunteers know it exists */}
                         <button
                             onClick={() => setView('available')}
@@ -323,6 +353,7 @@ export function VolunteerApp({ runners, currentRunner, unassigned, myOrders }: V
                                 </span>
                             )}
                         </button>
+                        </div>
                     </div>
 
                     {myOrdersList.length === 0 ? (
