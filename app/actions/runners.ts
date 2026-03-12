@@ -78,6 +78,9 @@ export async function clearRunnerCookie() {
 
 export async function deleteRunner(runnerId: string) {
     try {
+        const { backupDatabaseSync } = await import('@/lib/backup');
+        backupDatabaseSync('delete-runner');
+
         // Manually clear runner_id on orders (FK cascade not enforced without PRAGMA foreign_keys = ON)
         await db.update(orders).set({ runnerId: null }).where(eq(orders.runnerId, runnerId));
         await db.delete(runners).where(eq(runners.id, runnerId));

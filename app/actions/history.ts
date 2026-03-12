@@ -235,6 +235,9 @@ export async function clearHistory(userName: string) {
             return { success: false, error: 'Name is required' };
         }
 
+        const { backupDatabaseSync } = await import('@/lib/backup');
+        backupDatabaseSync('clear-history');
+
         db.transaction((tx) => {
             // Delete all existing log entries
             tx.delete(logs).run();

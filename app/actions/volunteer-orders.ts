@@ -532,6 +532,9 @@ export async function getLocationOrderCounts(): Promise<Record<string, { open: n
 
 export async function deleteLocationHistory(locationId: string) {
     try {
+        const { backupDatabaseSync } = await import('@/lib/backup');
+        backupDatabaseSync('delete-loc-history');
+
         // Delete completed orders for this location (status = 'done')
         // order_items cascade-delete via FK
         const deleted = await db
@@ -550,6 +553,9 @@ export async function deleteLocationHistory(locationId: string) {
 
 export async function deleteOrder(orderId: string) {
     try {
+        const { backupDatabaseSync } = await import('@/lib/backup');
+        backupDatabaseSync('delete-order');
+
         await db.delete(orders).where(eq(orders.id, orderId));
         revalidatePath('/orders');
         revalidatePath('/volunteer');

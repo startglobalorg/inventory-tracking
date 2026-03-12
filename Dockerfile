@@ -33,7 +33,7 @@ ENV NODE_ENV production
 # ENV NEXT_TELEMETRY_DISABLED 1
 
 # Install su-exec for running commands as different user
-RUN apk add --no-cache su-exec
+RUN apk add --no-cache su-exec sqlite
 
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
