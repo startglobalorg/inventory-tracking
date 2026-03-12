@@ -250,6 +250,18 @@ function LocationsView({
     setConfirmingLocationId: (id: string | null) => void;
     handleDeleteHistory: (id: string) => void;
 }) {
+    const [confirmText, setConfirmText] = useState('');
+
+    const handleCancel = () => {
+        setConfirmingLocationId(null);
+        setConfirmText('');
+    };
+
+    const handleConfirm = (locationId: string) => {
+        handleDeleteHistory(locationId);
+        setConfirmText('');
+    };
+
     return (
         <>
             <div className="mb-2 flex items-center justify-between">
@@ -272,47 +284,65 @@ function LocationsView({
                         return (
                             <div
                                 key={location.id}
-                                className="flex items-center justify-between gap-4 rounded-xl bg-grape border border-esbee px-4 py-3"
+                                className="rounded-xl bg-grape border border-esbee px-4 py-3"
                             >
-                                <div className="min-w-0">
-                                    <p className="font-bold text-white truncate">{location.name}</p>
-                                    <p className="text-xs text-slate-400">
-                                        /request/{location.slug}
-                                    </p>
-                                    <div className="mt-1 flex items-center gap-3">
-                                        <span className="text-xs text-jayouh font-semibold">
-                                            {counts?.open ?? 0} open
-                                        </span>
-                                        <span className="text-xs text-slate-500">·</span>
-                                        <span className="text-xs text-slate-400">
-                                            {counts?.total ?? 0} total
-                                        </span>
+                                <div className="flex items-center justify-between gap-4">
+                                    <div className="min-w-0">
+                                        <p className="font-bold text-white truncate">{location.name}</p>
+                                        <p className="text-xs text-slate-400">
+                                            /request/{location.slug}
+                                        </p>
+                                        <div className="mt-1 flex items-center gap-3">
+                                            <span className="text-xs text-jayouh font-semibold">
+                                                {counts?.open ?? 0} open
+                                            </span>
+                                            <span className="text-xs text-slate-500">·</span>
+                                            <span className="text-xs text-slate-400">
+                                                {counts?.total ?? 0} total
+                                            </span>
+                                        </div>
                                     </div>
+
+                                    {confirmingLocationId !== location.id && (
+                                        <button
+                                            onClick={() => setConfirmingLocationId(location.id)}
+                                            disabled={doneCount === 0}
+                                            className="shrink-0 rounded-lg border border-red-800/50 bg-red-900/20 px-3 py-1.5 text-sm font-bold text-red-400 hover:bg-red-900/40 active:scale-95 transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+                                        >
+                                            Clear History
+                                        </button>
+                                    )}
                                 </div>
 
-                                {confirmingLocationId === location.id ? (
-                                    <div className="flex gap-2 shrink-0">
-                                        <button
-                                            onClick={() => setConfirmingLocationId(null)}
-                                            className="rounded-lg border border-esbee bg-night px-3 py-1.5 text-sm text-slate-300 hover:bg-esbee/20 active:scale-95 transition-all"
-                                        >
-                                            Cancel
-                                        </button>
-                                        <button
-                                            onClick={() => handleDeleteHistory(location.id)}
-                                            className="rounded-lg bg-red-600 px-3 py-1.5 text-sm font-bold text-white hover:bg-red-700 active:scale-95 transition-all"
-                                        >
-                                            Confirm
-                                        </button>
+                                {confirmingLocationId === location.id && (
+                                    <div className="mt-3 border-t border-esbee pt-3">
+                                        <p className="text-xs text-red-300 mb-2">
+                                            This will delete {doneCount} completed order(s). Type <strong>DELETE</strong> to confirm.
+                                        </p>
+                                        <div className="flex gap-2">
+                                            <input
+                                                type="text"
+                                                value={confirmText}
+                                                onChange={e => setConfirmText(e.target.value)}
+                                                placeholder="Type DELETE"
+                                                className="flex-1 rounded-lg bg-night border border-esbee px-3 py-1.5 text-sm text-white placeholder:text-slate-600 focus:outline-none focus:border-red-600"
+                                                autoFocus
+                                            />
+                                            <button
+                                                onClick={handleCancel}
+                                                className="rounded-lg border border-esbee bg-night px-3 py-1.5 text-sm text-slate-300 hover:bg-esbee/20 active:scale-95 transition-all"
+                                            >
+                                                Cancel
+                                            </button>
+                                            <button
+                                                onClick={() => handleConfirm(location.id)}
+                                                disabled={confirmText !== 'DELETE'}
+                                                className="rounded-lg bg-red-600 px-3 py-1.5 text-sm font-bold text-white hover:bg-red-700 active:scale-95 transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+                                            >
+                                                Confirm
+                                            </button>
+                                        </div>
                                     </div>
-                                ) : (
-                                    <button
-                                        onClick={() => setConfirmingLocationId(location.id)}
-                                        disabled={doneCount === 0}
-                                        className="shrink-0 rounded-lg border border-red-800/50 bg-red-900/20 px-3 py-1.5 text-sm font-bold text-red-400 hover:bg-red-900/40 active:scale-95 transition-all disabled:opacity-30 disabled:cursor-not-allowed"
-                                    >
-                                        Clear History
-                                    </button>
                                 )}
                             </div>
                         );

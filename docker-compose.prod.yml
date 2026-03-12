@@ -14,4 +14,7 @@ services:
       - DATABASE_URL=/app/sqlite-data/sqlite.db
       - ADMIN_PASSWORD=${ADMIN_PASSWORD:-changeme}
     volumes:
-      - ./sqlite-data:/app/sqlite-data
+      - sqlite-data:/app/sqlite-data
+
+volumes:
+  sqlite-data:

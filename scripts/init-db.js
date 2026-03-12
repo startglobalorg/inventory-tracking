@@ -91,6 +91,14 @@ if (!dbExists) {
             console.log('orders.cancelled_by column: OK');
         }
 
+        // storage_type column on orders ('normal' | 'cold', defaults to 'normal')
+        if (!orderCols.some(c => c.name === 'storage_type')) {
+            db.exec("ALTER TABLE orders ADD COLUMN storage_type TEXT NOT NULL DEFAULT 'normal'");
+            console.log('orders.storage_type column: added');
+        } else {
+            console.log('orders.storage_type column: OK');
+        }
+
         // Fix Accreditation to use text-based request form
         db.prepare("UPDATE locations SET type = 'text' WHERE slug = 'accreditation' AND type = 'inventory'").run();
         console.log('locations.accreditation type: OK');
@@ -107,8 +115,41 @@ if (!dbExists) {
         insertLoc.run(randomUUID(), 'Speaker Lounge', 'speaker-lounge');
         console.log('Speaker Lounge: OK');
 
-        // restricted_to_location_slug column on items
+        // completed_at column on orders (nullable timestamp)
+        // Re-read orderCols in case it was stale
+        const orderColsRefresh = db.prepare('PRAGMA table_info(orders)').all();
+        if (!orderColsRefresh.some(c => c.name === 'completed_at')) {
+            db.exec('ALTER TABLE orders ADD COLUMN completed_at INTEGER');
+            console.log('orders.completed_at column: added');
+        } else {
+            console.log('orders.completed_at column: OK');
+        }
+
+        // items table — add missing columns
         const itemCols = db.prepare('PRAGMA table_info(items)').all();
+
+        if (!itemCols.some(c => c.name === 'image_url')) {
+            db.exec('ALTER TABLE items ADD COLUMN image_url TEXT');
+            console.log('items.image_url column: added');
+        } else {
+            console.log('items.image_url column: OK');
+        }
+
+        if (!itemCols.some(c => c.name === 'size')) {
+            db.exec('ALTER TABLE items ADD COLUMN size TEXT');
+            console.log('items.size column: added');
+        } else {
+            console.log('items.size column: OK');
+        }
+
+        if (!itemCols.some(c => c.name === 'cold_storage')) {
+            db.exec("ALTER TABLE items ADD COLUMN cold_storage INTEGER NOT NULL DEFAULT 0");
+            console.log('items.cold_storage column: added');
+        } else {
+            console.log('items.cold_storage column: OK');
+        }
+
+        // restricted_to_location_slug column on items
         if (!itemCols.some(c => c.name === 'restricted_to_location_slug')) {
             db.exec('ALTER TABLE items ADD COLUMN restricted_to_location_slug TEXT');
             console.log('items.restricted_to_location_slug column: added');
