@@ -1,12 +1,13 @@
 'use client';
 
 import { useState } from 'react';
-import { editOrderLog, deleteOrderLog } from '@/app/actions/history';
+import { useRouter } from 'next/navigation';
+import { editOrderLog, deleteOrderLog, clearHistory } from '@/app/actions/history';
 import { useToast } from './ToastProvider';
 
 type OrderLog = {
     logId: string;
-    itemId: string;
+    itemId: string | null;
     itemName: string | null;
     itemSku: string | null;
     itemCategory: string | null;
@@ -18,9 +19,15 @@ type OrderLog = {
 
 export function OrderHistoryClient({ logs }: { logs: OrderLog[] }) {
     const { showToast } = useToast();
+    const router = useRouter();
     const [editingId, setEditingId] = useState<string | null>(null);
     const [editAmount, setEditAmount] = useState<string>('');
     const [isSubmitting, setIsSubmitting] = useState(false);
+
+    // Clear history modal state
+    const [showClearModal, setShowClearModal] = useState(false);
+    const [clearName, setClearName] = useState('');
+    const [isClearing, setIsClearing] = useState(false);
 
     const handleEdit = (log: OrderLog) => {
         setEditingId(log.logId);
@@ -74,6 +81,21 @@ export function OrderHistoryClient({ logs }: { logs: OrderLog[] }) {
         setEditAmount('');
     };
 
+    const handleClearHistory = async () => {
+        if (!clearName.trim()) return;
+        setIsClearing(true);
+        const result = await clearHistory(clearName.trim());
+        setIsClearing(false);
+        if (result.success) {
+            setShowClearModal(false);
+            setClearName('');
+            showToast('History cleared successfully', 'success');
+            router.refresh();
+        } else {
+            showToast(result.error || 'Failed to clear history', 'error');
+        }
+    };
+
     const formatDate = (date: Date | null) => {
         if (!date) return 'N/A';
         return new Date(date).toLocaleString();
@@ -87,12 +109,61 @@ export function OrderHistoryClient({ logs }: { logs: OrderLog[] }) {
                 return <span className="inline-block rounded-full bg-green-900/30 px-2 py-1 text-xs font-semibold text-green-300">Restocked</span>;
             case 'adjustment':
                 return <span className="inline-block rounded-full bg-blue-900/30 px-2 py-1 text-xs font-semibold text-blue-300">Adjustment</span>;
+            case 'cleared':
+                return <span className="inline-block rounded-full bg-orange-900/30 px-2 py-1 text-xs font-semibold text-orange-300">Cleared</span>;
             default:
                 return <span className="inline-block rounded-full bg-slate-700 px-2 py-1 text-xs font-semibold text-slate-300">{reason}</span>;
         }
     };
 
     return (
+        <>
+        {/* Clear History Confirmation Modal */}
+        {showClearModal && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
+                <div className="absolute inset-0 bg-black/70" onClick={() => { setShowClearModal(false); setClearName(''); }} />
+                <div className="relative w-full max-w-md rounded-2xl border border-red-800 bg-slate-900 p-6 shadow-2xl space-y-5">
+                    <div className="flex items-start gap-3">
+                        <div className="shrink-0 flex h-10 w-10 items-center justify-center rounded-full bg-red-900/50 text-red-400 text-xl">⚠</div>
+                        <div>
+                            <h3 className="text-lg font-bold text-white">Clear All History?</h3>
+                            <p className="mt-1 text-sm text-slate-400">
+                                This will permanently delete all log entries. Stock levels will not be affected. A single &quot;History Cleared&quot; entry will be created in its place.
+                            </p>
+                        </div>
+                    </div>
+                    <div>
+                        <label className="block text-sm font-medium text-slate-400 mb-1">Your name</label>
+                        <input
+                            type="text"
+                            autoFocus
+                            placeholder="e.g. John Doe"
+                            value={clearName}
+                            onChange={(e) => setClearName(e.target.value)}
+                            onKeyDown={(e) => e.key === 'Enter' && handleClearHistory()}
+                            className="w-full rounded-lg bg-slate-800 border border-slate-600 text-white px-3 py-2.5 focus:border-red-500 focus:outline-none"
+                        />
+                    </div>
+                    <div className="flex gap-3">
+                        <button
+                            onClick={() => { setShowClearModal(false); setClearName(''); }}
+                            disabled={isClearing}
+                            className="flex-1 rounded-xl border border-slate-600 bg-slate-800 py-3 text-sm font-bold text-slate-300 hover:bg-slate-700 disabled:opacity-40 transition-all"
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            onClick={handleClearHistory}
+                            disabled={!clearName.trim() || isClearing}
+                            className="flex-1 rounded-xl bg-red-700 py-3 text-sm font-bold text-white hover:bg-red-600 disabled:opacity-40 transition-all"
+                        >
+                            {isClearing ? 'Clearing…' : 'Clear History'}
+                        </button>
+                    </div>
+                </div>
+            </div>
+        )}
+
         <div className="rounded-xl bg-slate-900 border border-slate-700 overflow-hidden">
             <div className="px-6 py-4 border-b border-slate-700">
                 <h2 className="text-xl font-bold text-white">Order Logs</h2>
@@ -124,7 +195,9 @@ export function OrderHistoryClient({ logs }: { logs: OrderLog[] }) {
                             logs.map((log) => (
                                 <tr key={log.logId} className="hover:bg-slate-800/50 transition-colors">
                                     <td className="px-4 py-4">
-                                        <p className="text-sm font-medium text-white">{log.itemName || 'Unknown'}</p>
+                                        <p className="text-sm font-medium text-white">
+                                            {log.reason === 'cleared' ? 'History Cleared' : (log.itemName || 'Unknown')}
+                                        </p>
                                     </td>
                                     <td className="px-4 py-4 hidden sm:table-cell">
                                         <p className="text-sm text-slate-400 font-mono">{log.itemSku || 'N/A'}</p>
@@ -158,7 +231,7 @@ export function OrderHistoryClient({ logs }: { logs: OrderLog[] }) {
                                         <p className="text-xs text-slate-500">{formatDate(log.createdAt)}</p>
                                     </td>
                                     <td className="px-4 py-4 text-right">
-                                        {editingId === log.logId ? (
+                                        {log.reason === 'cleared' ? null : editingId === log.logId ? (
                                             <div className="flex justify-end gap-2">
                                                 <button
                                                     onClick={() => handleSave(log.logId, log.changeAmount, log.reason)}
@@ -198,6 +271,17 @@ export function OrderHistoryClient({ logs }: { logs: OrderLog[] }) {
                     </tbody>
                 </table>
             </div>
+
+            {/* Clear History */}
+            <div className="px-6 py-5 border-t border-slate-700 flex justify-end">
+                <button
+                    onClick={() => setShowClearModal(true)}
+                    className="rounded-lg border border-red-800 bg-red-900/20 px-4 py-2 text-sm font-semibold text-red-400 hover:bg-red-900/40 transition-colors"
+                >
+                    Clear History
+                </button>
+            </div>
         </div>
+        </>
     );
 }

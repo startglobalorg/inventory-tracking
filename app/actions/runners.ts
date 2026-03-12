@@ -299,6 +299,16 @@ export async function getRunnerOrderCounts(): Promise<Record<string, { open: num
 export async function completeVolunteerOrder(orderId: string, volunteerName: string) {
     try {
         const result = db.transaction((tx) => {
+            // Idempotency guard — prevent double stock deduction if tapped twice
+            const currentOrder = tx
+                .select({ status: orders.status })
+                .from(orders)
+                .where(eq(orders.id, orderId))
+                .limit(1)
+                .all();
+            if (currentOrder.length === 0) throw new Error('Order not found');
+            if (currentOrder[0].status === 'done') throw new Error('Order already completed');
+
             const orderItemsList = tx
                 .select({ itemId: orderItems.itemId, quantity: orderItems.quantity })
                 .from(orderItems)

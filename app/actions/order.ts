@@ -1,14 +1,17 @@
 'use server';
 
 import { db } from '@/db/db';
-import { items, logs } from '@/db/schema';
+import { items, logs, orders } from '@/db/schema';
 import { eq, sql } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
 import { notifyLowStock } from './webhook';
 
+const MAX_QUANTITY = 10_000;
+
 export async function submitOrder(
     cartItems: Record<string, number>,
-    userName: string
+    userName: string,
+    linkedOrderId?: string
 ) {
     try {
         // Validate input
@@ -34,6 +37,11 @@ export async function submitOrder(
 
             for (const [itemId, changeAmount] of Object.entries(cartItems)) {
                 if (changeAmount === 0) continue;
+
+                // Validate quantity is a safe integer within bounds
+                if (!Number.isInteger(changeAmount) || !Number.isFinite(changeAmount) || Math.abs(changeAmount) > MAX_QUANTITY) {
+                    throw new Error(`Invalid quantity for item ${itemId}: must be a whole number between -${MAX_QUANTITY} and ${MAX_QUANTITY}`);
+                }
 
                 // Read current item state for threshold checks and error messages
                 const item = tx.select().from(items).where(eq(items.id, itemId)).limit(1).all();
@@ -87,6 +95,14 @@ export async function submitOrder(
                 }
             }
 
+            // If this fulfills a volunteer order, mark it done atomically
+            if (linkedOrderId) {
+                tx.update(orders)
+                    .set({ status: 'done', completedAt: new Date() })
+                    .where(eq(orders.id, linkedOrderId))
+                    .run();
+            }
+
             return { lowStockItems };
         });
 
@@ -99,6 +115,7 @@ export async function submitOrder(
 
         revalidatePath('/');
         revalidatePath('/restock');
+        revalidatePath('/orders');
         return { success: true };
     } catch (error) {
         console.error('Error submitting order:', error);

@@ -30,12 +30,12 @@ export const items = sqliteTable('items', {
 // Logs table - tracks inventory changes
 export const logs = sqliteTable('logs', {
     id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+    // Nullable so deleting an item preserves the audit log (set null rather than cascade delete)
     itemId: text('item_id')
-        .notNull()
-        .references(() => items.id, { onDelete: 'cascade' }),
+        .references(() => items.id, { onDelete: 'set null' }),
     changeAmount: integer('change_amount').notNull(),
     reason: text('reason', {
-        enum: ['consumed', 'restocked', 'adjustment']
+        enum: ['consumed', 'restocked', 'adjustment', 'cleared']
     }).notNull(),
     userName: text('user_name'),
     createdAt: integer('created_at', { mode: 'timestamp' })

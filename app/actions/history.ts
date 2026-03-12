@@ -103,6 +103,11 @@ export async function editOrderLog(logId: string, newAmount: number, _reason: st
             }
 
             const log = originalLog[0];
+
+            if (!log.itemId) {
+                throw new Error('Log is not associated with an item');
+            }
+
             const difference = newAmount - log.changeAmount;
 
             // If no change, just return
@@ -175,6 +180,12 @@ export async function deleteOrderLog(logId: string) {
 
             const log = originalLog[0];
 
+            if (!log.itemId) {
+                // Log is orphaned (item was deleted) — just delete the log entry
+                tx.delete(logs).where(eq(logs.id, logId)).run();
+                return;
+            }
+
             // Atomic stock reversal with negative-stock guard
             const updated = tx
                 .update(items)
@@ -214,6 +225,35 @@ export async function deleteOrderLog(logId: string) {
     } catch (error) {
         console.error('Error deleting order log:', error);
         return { success: false, error: error instanceof Error ? error.message : 'Failed to delete order log' };
+    }
+}
+
+export async function clearHistory(userName: string) {
+    try {
+        const trimmed = userName.trim();
+        if (!trimmed) {
+            return { success: false, error: 'Name is required' };
+        }
+
+        db.transaction((tx) => {
+            // Delete all existing log entries
+            tx.delete(logs).run();
+
+            // Insert a single sentinel entry marking the clear
+            tx.insert(logs).values({
+                itemId: null,
+                changeAmount: 0,
+                reason: 'cleared',
+                userName: trimmed,
+            }).run();
+        });
+
+        revalidatePath('/history');
+        revalidatePath('/');
+        return { success: true };
+    } catch (error) {
+        console.error('Error clearing history:', error);
+        return { success: false, error: error instanceof Error ? error.message : 'Failed to clear history' };
     }
 }
 

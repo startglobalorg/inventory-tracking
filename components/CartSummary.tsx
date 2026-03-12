@@ -4,7 +4,6 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useCart } from './CartProvider';
 import { submitOrder } from '@/app/actions/order';
-import { updateOrderStatus } from '@/app/actions/volunteer-orders';
 import { useToast } from './ToastProvider';
 import type { Item } from '@/db/schema';
 
@@ -35,18 +34,12 @@ export function CartSummary({ allItems }: { allItems: Item[] }) {
             });
 
             const result = await Promise.race([
-                submitOrder(items, userName),
+                submitOrder(items, userName, linkedOrderId ?? undefined),
                 timeoutPromise
             ]);
 
             if (result.success) {
-                // If linked to a volunteer order, mark it as done
-                if (linkedOrderId) {
-                    await updateOrderStatus(linkedOrderId, 'done');
-                    showToast('Order fulfilled and stock updated!', 'success');
-                } else {
-                    showToast('Order submitted successfully!', 'success');
-                }
+                showToast(linkedOrderId ? 'Order fulfilled and stock updated!' : 'Order submitted successfully!', 'success');
                 clearCart();
                 setIsOpen(false);
                 setUserName('');

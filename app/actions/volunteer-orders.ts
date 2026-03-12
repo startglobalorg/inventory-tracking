@@ -2,7 +2,7 @@
 
 import { db } from '@/db/db';
 import { locations, orders, orderItems, items, runners } from '@/db/schema';
-import { eq, asc, desc, gt, inArray, or, isNull, and } from 'drizzle-orm';
+import { eq, asc, desc, gt, inArray, or, isNull, and, sql } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
 
 // Types
@@ -126,7 +126,9 @@ export async function submitVolunteerRequest(
         const isTextRequest = !!customRequest?.trim();
 
         if (!isTextRequest) {
-            const validItems = Object.entries(requestedItems).filter(([, qty]) => qty > 0);
+            const validItems = Object.entries(requestedItems).filter(([, qty]) =>
+                Number.isInteger(qty) && Number.isFinite(qty) && qty > 0 && qty <= 10_000
+            );
             if (validItems.length === 0) {
                 return { success: false, error: 'No items selected' };
             }
@@ -158,7 +160,9 @@ export async function submitVolunteerRequest(
             }
 
             // Inventory request: validate items then insert order + order_items
-            const validItems = Object.entries(requestedItems).filter(([, qty]) => qty > 0);
+            const validItems = Object.entries(requestedItems).filter(([, qty]) =>
+                Number.isInteger(qty) && Number.isFinite(qty) && qty > 0 && qty <= 10_000
+            );
             const itemIds = validItems.map(([id]) => id);
             const existingItems = tx
                 .select({ id: items.id })
@@ -422,6 +426,10 @@ export async function updateOrderStatus(
             return { success: false, error: 'Order not found' };
         }
 
+        if (order[0].status === 'cancelled') {
+            return { success: false, error: 'Cannot change status of a cancelled order' };
+        }
+
         const updateData: { status: OrderStatus; completedAt?: Date | null } = {
             status: newStatus,
         };
@@ -498,6 +506,45 @@ export async function cancelOrder(orderId: string, locationName: string) {
     } catch (error) {
         console.error('Error cancelling order:', error);
         return { success: false, error: 'Failed to cancel order' };
+    }
+}
+
+export async function getLocationOrderCounts(): Promise<Record<string, { open: number; total: number }>> {
+    try {
+        const rows = await db
+            .select({
+                locationId: orders.locationId,
+                open: sql<number>`sum(case when ${orders.status} not in ('done', 'cancelled') then 1 else 0 end)`,
+                total: sql<number>`count(*)`,
+            })
+            .from(orders)
+            .groupBy(orders.locationId);
+
+        const result: Record<string, { open: number; total: number }> = {};
+        for (const row of rows) {
+            result[row.locationId] = { open: Number(row.open), total: Number(row.total) };
+        }
+        return result;
+    } catch {
+        return {};
+    }
+}
+
+export async function deleteLocationHistory(locationId: string) {
+    try {
+        // Delete completed orders for this location (status = 'done')
+        // order_items cascade-delete via FK
+        const deleted = await db
+            .delete(orders)
+            .where(and(eq(orders.locationId, locationId), eq(orders.status, 'done')))
+            .returning({ id: orders.id });
+
+        revalidatePath('/admin');
+        revalidatePath('/orders');
+        return { success: true, deletedCount: deleted.length };
+    } catch (error) {
+        console.error('Error deleting location history:', error);
+        return { success: false, error: 'Failed to delete location history' };
     }
 }
 
