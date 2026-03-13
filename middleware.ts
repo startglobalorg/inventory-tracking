@@ -63,7 +63,7 @@ function getPangolinToken(request: NextRequest): string | null {
 
 /** Build a redirect URL using the public BASE_URL, preserving p_token. */
 function buildRedirect(request: NextRequest, path: string, params?: Record<string, string>): URL {
-    const base = process.env.BASE_URL || request.url;
+    const base = process.env.BASE_URL || 'http://localhost:3000';
     const url = new URL(path, base);
     const pToken = getPangolinToken(request);
     if (pToken) url.searchParams.set('p_token', pToken);
