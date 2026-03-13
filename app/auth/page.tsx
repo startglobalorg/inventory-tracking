@@ -1,8 +1,14 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Suspense } from 'react';
+
+function getCookie(name: string): string | null {
+    if (typeof document === 'undefined') return null;
+    const match = document.cookie.match(new RegExp('(^| )' + name + '=([^;]+)'));
+    return match ? decodeURIComponent(match[2]) : null;
+}
 
 function AuthForm() {
     const searchParams = useSearchParams();
@@ -10,13 +16,22 @@ function AuthForm() {
     const redirect = searchParams.get('redirect');
     const [pin, setPin] = useState('');
     const [isLoading, setIsLoading] = useState(false);
+    const [pToken, setPToken] = useState<string | null>(null);
+
+    useEffect(() => {
+        // Read p_token from URL params or cookie
+        const urlToken = searchParams.get('p_token');
+        const cookieToken = getCookie('pangolin_token');
+        setPToken(urlToken || cookieToken || null);
+    }, [searchParams]);
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         if (!pin.trim()) return;
         setIsLoading(true);
-        // Navigate to the API route which validates and sets the cookie
-        window.location.href = `/api/auth/pin?pin=${encodeURIComponent(pin.trim())}`;
+        let url = `/api/auth/pin?pin=${encodeURIComponent(pin.trim())}`;
+        if (pToken) url += `&p_token=${encodeURIComponent(pToken)}`;
+        window.location.href = url;
     };
 
     return (

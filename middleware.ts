@@ -52,12 +52,52 @@ async function isAdmin(request: NextRequest): Promise<boolean> {
     return token === await sha256(adminPassword);
 }
 
+// ── Pangolin token helpers ──────────────────────────────────────
+
+/** Read p_token from query string or cookie. */
+function getPangolinToken(request: NextRequest): string | null {
+    return request.nextUrl.searchParams.get('p_token')
+        || request.cookies.get('pangolin_token')?.value
+        || null;
+}
+
+/** Build a redirect URL using the public BASE_URL, preserving p_token. */
+function buildRedirect(request: NextRequest, path: string, params?: Record<string, string>): URL {
+    const base = process.env.BASE_URL || request.url;
+    const url = new URL(path, base);
+    const pToken = getPangolinToken(request);
+    if (pToken) url.searchParams.set('p_token', pToken);
+    if (params) {
+        for (const [k, v] of Object.entries(params)) {
+            url.searchParams.set(k, v);
+        }
+    }
+    return url;
+}
+
+/** If p_token came in via query param, set it as a client-readable cookie. */
+function setPangolinCookie(request: NextRequest, response: NextResponse): NextResponse {
+    const pToken = request.nextUrl.searchParams.get('p_token');
+    if (pToken) {
+        response.cookies.set('pangolin_token', pToken, {
+            httpOnly: false, // client JS needs to read this for fetch interceptor
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'lax',
+            path: '/',
+            maxAge: 60 * 60 * 24 * 30, // 30 days
+        });
+    }
+    return response;
+}
+
+// ── Main middleware ──────────────────────────────────────────────
+
 export async function middleware(request: NextRequest) {
     const { pathname } = request.nextUrl;
 
     // ── Admin routes ──────────────────────────────────────────
     if (pathname === '/admin/login') {
-        return NextResponse.next();
+        return setPangolinCookie(request, NextResponse.next());
     }
 
     if (pathname.startsWith('/admin')) {
@@ -65,17 +105,17 @@ export async function middleware(request: NextRequest) {
         const adminPassword = process.env.ADMIN_PASSWORD;
 
         if (!token || !adminPassword) {
-            return NextResponse.redirect(new URL('/admin/login', request.url));
+            return setPangolinCookie(request, NextResponse.redirect(buildRedirect(request, '/admin/login')));
         }
 
         const expectedToken = await sha256(adminPassword);
         if (token !== expectedToken) {
-            const response = NextResponse.redirect(new URL('/admin/login', request.url));
+            const response = NextResponse.redirect(buildRedirect(request, '/admin/login'));
             response.cookies.delete('admin_token');
-            return response;
+            return setPangolinCookie(request, response);
         }
 
-        return NextResponse.next();
+        return setPangolinCookie(request, NextResponse.next());
     }
 
     // ── PIN-protected routes ──────────────────────────────────
@@ -85,35 +125,40 @@ export async function middleware(request: NextRequest) {
     if (requestMatch) {
         const slug = requestMatch[1];
 
-        // Allow through if: admin, valid pin cookie, or pin in query param (handled by API route)
-        if (await isAdmin(request)) return NextResponse.next();
+        if (await isAdmin(request)) return setPangolinCookie(request, NextResponse.next());
 
         const cookie = request.cookies.get(`pin_${slug}`)?.value;
-        if (await verifyPinCookie(cookie, slug)) return NextResponse.next();
+        if (await verifyPinCookie(cookie, slug)) return setPangolinCookie(request, NextResponse.next());
 
-        // Also allow /request/{slug}/history if the request page is authorized
-        // (the cookie covers all sub-paths of this location)
-
-        const authUrl = new URL('/auth', request.url);
-        authUrl.searchParams.set('redirect', pathname);
-        return NextResponse.redirect(authUrl);
+        return setPangolinCookie(request, NextResponse.redirect(
+            buildRedirect(request, '/auth', { redirect: pathname })
+        ));
     }
 
     // /volunteer — needs pin_volunteer cookie
     if (pathname === '/volunteer' || pathname.startsWith('/volunteer/')) {
-        if (await isAdmin(request)) return NextResponse.next();
+        if (await isAdmin(request)) return setPangolinCookie(request, NextResponse.next());
 
         const cookie = request.cookies.get('pin_volunteer')?.value;
-        if (await verifyPinCookie(cookie, 'volunteer')) return NextResponse.next();
+        if (await verifyPinCookie(cookie, 'volunteer')) return setPangolinCookie(request, NextResponse.next());
 
-        const authUrl = new URL('/auth', request.url);
-        authUrl.searchParams.set('redirect', pathname);
-        return NextResponse.redirect(authUrl);
+        return setPangolinCookie(request, NextResponse.redirect(
+            buildRedirect(request, '/auth', { redirect: pathname })
+        ));
     }
 
-    return NextResponse.next();
+    // ── All other matched routes: just set the cookie ─────────
+    return setPangolinCookie(request, NextResponse.next());
 }
 
 export const config = {
-    matcher: ['/admin/:path*', '/request/:path*', '/volunteer/:path*'],
+    matcher: [
+        /*
+         * Match all paths except:
+         * - _next/static, _next/image (static assets)
+         * - favicon.ico, robots.txt, sitemap.xml
+         * - image files
+         */
+        '/((?!_next/static|_next/image|favicon\\.ico|robots\\.txt|sitemap\\.xml|.*\\.png$|.*\\.jpg$|.*\\.svg$).*)',
+    ],
 };

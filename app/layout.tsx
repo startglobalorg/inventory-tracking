@@ -3,6 +3,7 @@ import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { ToastProvider } from "@/components/ToastProvider";
 import PremiumButtonProvider from "@/components/PremiumButtonProvider";
+import { PangolinAuthProvider } from "@/components/PangolinAuthProvider";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -38,6 +39,7 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         <PremiumButtonProvider />
+        <PangolinAuthProvider />
         <ToastProvider>
           {children}
         </ToastProvider>

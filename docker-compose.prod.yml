@@ -15,6 +15,7 @@ services:
       - ADMIN_PASSWORD=${ADMIN_PASSWORD:-changeme}
       - VOLUNTEER_PIN=${VOLUNTEER_PIN:-}
       - BASE_URL=${BASE_URL:-}
+      - PANGOLIN_TOKEN=${PANGOLIN_TOKEN:-}
     volumes:
       - sqlite-data:/app/sqlite-data
 

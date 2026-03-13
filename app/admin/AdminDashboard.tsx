@@ -18,6 +18,7 @@ export function AdminDashboard({
     locationOrderCounts,
     volunteerPin,
     baseUrl,
+    pangolinToken,
 }: {
     initialRunners: Runner[];
     orderCounts: Record<string, { open: number; total: number }>;
@@ -25,6 +26,7 @@ export function AdminDashboard({
     locationOrderCounts: Record<string, { open: number; done: number; total: number }>;
     volunteerPin: string | null;
     baseUrl: string;
+    pangolinToken: string | null;
 }) {
     const [activeTab, setActiveTab] = useState<Tab>('volunteers');
     const [runnerList, setRunnerList] = useState(initialRunners);
@@ -172,6 +174,7 @@ export function AdminDashboard({
                         locations={initialLocations}
                         volunteerPin={volunteerPin}
                         baseUrl={baseUrl}
+                        pangolinToken={pangolinToken}
                     />
                 )}
             </div>
@@ -267,10 +270,12 @@ function PinsView({
     locations: locs,
     volunteerPin,
     baseUrl,
+    pangolinToken,
 }: {
     locations: Location[];
     volunteerPin: string | null;
     baseUrl: string;
+    pangolinToken: string | null;
 }) {
     const [isGenerating, setIsGenerating] = useState(false);
     const [genResult, setGenResult] = useState<string | null>(null);
@@ -289,6 +294,7 @@ function PinsView({
         }
     };
 
+    const tokenParam = pangolinToken ? `&p_token=${encodeURIComponent(pangolinToken)}` : '';
     const missingPins = locs.filter(l => !l.accessPin).length;
 
     return (
@@ -339,7 +345,7 @@ function PinsView({
                 </div>
                 {volunteerPin && (
                     <p className="mt-2 text-xs text-slate-500 font-mono truncate">
-                        {baseUrl}/api/auth/pin?pin={volunteerPin}
+                        {baseUrl}/api/auth/pin?pin={volunteerPin}{tokenParam}
                     </p>
                 )}
             </div>
@@ -363,7 +369,7 @@ function PinsView({
                         </div>
                         {loc.accessPin && (
                             <p className="mt-2 text-xs text-slate-500 font-mono truncate">
-                                {baseUrl}/api/auth/pin?pin={loc.accessPin}
+                                {baseUrl}/api/auth/pin?pin={loc.accessPin}{tokenParam}
                             </p>
                         )}
                     </div>

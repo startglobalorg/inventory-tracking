@@ -21,6 +21,7 @@ export default async function QrCodesPage() {
     if (!isValid) redirect('/admin/login');
 
     const baseUrl = process.env.BASE_URL || 'http://localhost:3000';
+    const pangolinToken = process.env.PANGOLIN_TOKEN || null;
     const volunteerPin = process.env.VOLUNTEER_PIN || null;
 
     const locationsResult = await getLocations();
@@ -30,8 +31,10 @@ export default async function QrCodesPage() {
     const qrItems: { label: string; subtitle: string; pin: string; url: string; svg: string }[] = [];
 
     // Volunteer QR
+    const tokenParam = pangolinToken ? `&p_token=${encodeURIComponent(pangolinToken)}` : '';
+
     if (volunteerPin) {
-        const url = `${baseUrl}/api/auth/pin?pin=${volunteerPin}`;
+        const url = `${baseUrl}/api/auth/pin?pin=${volunteerPin}${tokenParam}`;
         const svg = await generateQrSvg(url);
         qrItems.push({ label: 'Volunteer Dashboard', subtitle: '/volunteer', pin: volunteerPin, url, svg });
     }
@@ -39,7 +42,7 @@ export default async function QrCodesPage() {
     // Location QRs
     for (const loc of allLocations) {
         if (!loc.accessPin) continue;
-        const url = `${baseUrl}/api/auth/pin?pin=${loc.accessPin}`;
+        const url = `${baseUrl}/api/auth/pin?pin=${loc.accessPin}${tokenParam}`;
         const svg = await generateQrSvg(url);
         qrItems.push({ label: loc.name, subtitle: `/request/${loc.slug}`, pin: loc.accessPin, url, svg });
     }
