@@ -60,6 +60,7 @@ export const locations = sqliteTable('locations', {
     name: text('name').notNull(),
     slug: text('slug').notNull().unique(), // For QR codes, e.g., "coffee-point-1"
     type: text('type', { enum: ['inventory', 'text'] }).notNull().default('inventory'),
+    accessPin: text('access_pin'),
     createdAt: integer('created_at', { mode: 'timestamp' })
         .notNull()
         .default(sql`(unixepoch())`),

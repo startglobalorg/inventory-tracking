@@ -4,23 +4,27 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { deleteRunner, getRunners } from '@/app/actions/runners';
 import { deleteLocationHistory } from '@/app/actions/volunteer-orders';
-import { adminLogout } from '@/app/actions/admin';
+import { adminLogout, generateLocationPins } from '@/app/actions/admin';
 import type { Runner, Location } from '@/db/schema';
 import { BrandHeader } from '@/components/BrandHeader';
 import { useRouter } from 'next/navigation';
 
-type Tab = 'volunteers' | 'locations';
+type Tab = 'volunteers' | 'locations' | 'pins';
 
 export function AdminDashboard({
     initialRunners,
     orderCounts,
     initialLocations,
     locationOrderCounts,
+    volunteerPin,
+    baseUrl,
 }: {
     initialRunners: Runner[];
     orderCounts: Record<string, { open: number; total: number }>;
     initialLocations: Location[];
     locationOrderCounts: Record<string, { open: number; done: number; total: number }>;
+    volunteerPin: string | null;
+    baseUrl: string;
 }) {
     const [activeTab, setActiveTab] = useState<Tab>('volunteers');
     const [runnerList, setRunnerList] = useState(initialRunners);
@@ -116,6 +120,16 @@ export function AdminDashboard({
                         >
                             Locations
                         </button>
+                        <button
+                            onClick={() => setActiveTab('pins')}
+                            className={`flex-1 py-3 text-sm font-bold text-center transition-colors ${
+                                activeTab === 'pins'
+                                    ? 'text-white border-b-2 border-cerise'
+                                    : 'text-slate-400 hover:text-slate-200'
+                            }`}
+                        >
+                            PINs
+                        </button>
                     </div>
                 </div>
             </div>
@@ -150,6 +164,14 @@ export function AdminDashboard({
                         confirmingLocationId={confirmingLocationId}
                         setConfirmingLocationId={setConfirmingLocationId}
                         handleDeleteHistory={handleDeleteHistory}
+                    />
+                )}
+
+                {activeTab === 'pins' && (
+                    <PinsView
+                        locations={initialLocations}
+                        volunteerPin={volunteerPin}
+                        baseUrl={baseUrl}
                     />
                 )}
             </div>
@@ -235,6 +257,118 @@ function VolunteersView({
                     ))}
                 </div>
             )}
+        </>
+    );
+}
+
+/* ── PINs & QR Codes Tab ──────────────────────────────────────── */
+
+function PinsView({
+    locations: locs,
+    volunteerPin,
+    baseUrl,
+}: {
+    locations: Location[];
+    volunteerPin: string | null;
+    baseUrl: string;
+}) {
+    const [isGenerating, setIsGenerating] = useState(false);
+    const [genResult, setGenResult] = useState<string | null>(null);
+    const router = useRouter();
+
+    const handleGenerate = async () => {
+        setIsGenerating(true);
+        setGenResult(null);
+        const result = await generateLocationPins();
+        setIsGenerating(false);
+        if (result.success) {
+            setGenResult(`Generated ${result.generated} new PIN(s)`);
+            router.refresh();
+        } else {
+            setGenResult(result.error || 'Failed to generate PINs');
+        }
+    };
+
+    const missingPins = locs.filter(l => !l.accessPin).length;
+
+    return (
+        <>
+            <div className="mb-4 flex items-center justify-between gap-3 flex-wrap">
+                <h2 className="text-lg font-bold text-white">
+                    Access PINs
+                </h2>
+                <div className="flex items-center gap-2">
+                    <Link
+                        href="/admin/qr-codes"
+                        className="rounded-lg bg-violet-accent px-4 py-2 text-sm font-bold text-white hover:bg-violet-accent/80 active:scale-95 transition-all"
+                    >
+                        View QR Codes
+                    </Link>
+                    {missingPins > 0 && (
+                        <button
+                            onClick={handleGenerate}
+                            disabled={isGenerating}
+                            className="rounded-lg bg-cerise px-4 py-2 text-sm font-bold text-white hover:bg-jayouh disabled:opacity-50 active:scale-95 transition-all"
+                        >
+                            {isGenerating ? 'Generating...' : `Generate PINs (${missingPins})`}
+                        </button>
+                    )}
+                </div>
+            </div>
+
+            {genResult && (
+                <div className="mb-3 rounded-lg bg-green-900/30 border border-green-700 px-4 py-2 text-sm text-green-300">
+                    {genResult}
+                </div>
+            )}
+
+            {/* Volunteer PIN */}
+            <div className="mb-4 rounded-xl bg-grape border border-esbee px-4 py-3">
+                <div className="flex items-center justify-between gap-4">
+                    <div>
+                        <p className="font-bold text-white">Volunteer Dashboard</p>
+                        <p className="text-xs text-slate-400">/volunteer</p>
+                    </div>
+                    {volunteerPin ? (
+                        <code className="rounded-lg bg-night border border-esbee px-3 py-1.5 text-lg font-mono font-bold text-jayouh tracking-widest">
+                            {volunteerPin}
+                        </code>
+                    ) : (
+                        <span className="text-xs text-red-400">Set VOLUNTEER_PIN in .env</span>
+                    )}
+                </div>
+                {volunteerPin && (
+                    <p className="mt-2 text-xs text-slate-500 font-mono truncate">
+                        {baseUrl}/api/auth/pin?pin={volunteerPin}
+                    </p>
+                )}
+            </div>
+
+            {/* Location PINs */}
+            <div className="space-y-2">
+                {locs.map(loc => (
+                    <div key={loc.id} className="rounded-xl bg-grape border border-esbee px-4 py-3">
+                        <div className="flex items-center justify-between gap-4">
+                            <div className="min-w-0">
+                                <p className="font-bold text-white truncate">{loc.name}</p>
+                                <p className="text-xs text-slate-400">/request/{loc.slug}</p>
+                            </div>
+                            {loc.accessPin ? (
+                                <code className="rounded-lg bg-night border border-esbee px-3 py-1.5 text-lg font-mono font-bold text-jayouh tracking-widest shrink-0">
+                                    {loc.accessPin}
+                                </code>
+                            ) : (
+                                <span className="text-xs text-slate-500 shrink-0">No PIN</span>
+                            )}
+                        </div>
+                        {loc.accessPin && (
+                            <p className="mt-2 text-xs text-slate-500 font-mono truncate">
+                                {baseUrl}/api/auth/pin?pin={loc.accessPin}
+                            </p>
+                        )}
+                    </div>
+                ))}
+            </div>
         </>
     );
 }

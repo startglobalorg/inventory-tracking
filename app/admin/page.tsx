@@ -28,6 +28,8 @@ export default async function AdminPage() {
             orderCounts={orderCounts}
             initialLocations={locationsList}
             locationOrderCounts={locationOrderCounts}
+            volunteerPin={process.env.VOLUNTEER_PIN || null}
+            baseUrl={process.env.BASE_URL || 'http://localhost:3000'}
         />
     );
 }

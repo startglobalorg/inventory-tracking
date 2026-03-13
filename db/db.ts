@@ -25,6 +25,12 @@ function getDb() {
         if (!hasColdStorage) {
             _sqlite.exec('ALTER TABLE items ADD COLUMN cold_storage integer NOT NULL DEFAULT 0');
         }
+        // Add access_pin column to locations table
+        const locCols = _sqlite.prepare('PRAGMA table_info(locations)').all() as { name: string }[];
+        if (!locCols.some(c => c.name === 'access_pin')) {
+            _sqlite.exec('ALTER TABLE locations ADD COLUMN access_pin TEXT');
+        }
+
         _migrated = true;
     }
     return _db!;
