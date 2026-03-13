@@ -1,7 +1,16 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
-export function middleware(request: NextRequest) {
+async function sha256(text: string): Promise<string> {
+    const encoder = new TextEncoder();
+    const data = encoder.encode(text);
+    const hash = await crypto.subtle.digest('SHA-256', data);
+    return Array.from(new Uint8Array(hash))
+        .map(b => b.toString(16).padStart(2, '0'))
+        .join('');
+}
+
+export async function middleware(request: NextRequest) {
     const { pathname } = request.nextUrl;
 
     // Allow the login page itself
@@ -12,16 +21,21 @@ export function middleware(request: NextRequest) {
     // Protect all /admin routes
     if (pathname.startsWith('/admin')) {
         const token = request.cookies.get('admin_token')?.value;
+        const adminPassword = process.env.ADMIN_PASSWORD;
 
-        if (!token) {
+        if (!token || !adminPassword) {
             const loginUrl = new URL('/admin/login', request.url);
             return NextResponse.redirect(loginUrl);
         }
 
-        // Validate token: it should be a hex SHA-256 hash that matches the password
-        // We can't re-hash here (no access to env in edge easily), so we store the hash
-        // in the cookie and validate it matches in the login action.
-        // For middleware, just check presence — the login action ensures correctness.
+        // Validate token matches the hash of the current password
+        const expectedToken = await sha256(adminPassword);
+        if (token !== expectedToken) {
+            const loginUrl = new URL('/admin/login', request.url);
+            const response = NextResponse.redirect(loginUrl);
+            response.cookies.delete('admin_token');
+            return response;
+        }
     }
 
     return NextResponse.next();

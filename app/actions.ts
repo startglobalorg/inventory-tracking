@@ -167,7 +167,10 @@ export async function toggleColdStorage(itemId: string) {
 export async function deleteItem(itemId: string) {
     try {
         const { backupDatabaseSync } = await import('@/lib/backup');
-        backupDatabaseSync('delete-item');
+        const backup = backupDatabaseSync('delete-item');
+        if (!backup) {
+            return { success: false, error: 'Backup failed — aborting deletion for safety' };
+        }
 
         // Check if item exists
         const existing = await db.select().from(items).where(eq(items.id, itemId)).limit(1);

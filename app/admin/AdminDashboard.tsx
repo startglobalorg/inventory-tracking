@@ -20,13 +20,14 @@ export function AdminDashboard({
     initialRunners: Runner[];
     orderCounts: Record<string, { open: number; total: number }>;
     initialLocations: Location[];
-    locationOrderCounts: Record<string, { open: number; total: number }>;
+    locationOrderCounts: Record<string, { open: number; done: number; total: number }>;
 }) {
     const [activeTab, setActiveTab] = useState<Tab>('volunteers');
     const [runnerList, setRunnerList] = useState(initialRunners);
     const [confirmingId, setConfirmingId] = useState<string | null>(null);
     const [confirmingLocationId, setConfirmingLocationId] = useState<string | null>(null);
     const [error, setError] = useState<string | null>(null);
+    const [isDeleting, setIsDeleting] = useState(false);
     const router = useRouter();
 
     const handleDelete = async (runnerId: string) => {
@@ -46,8 +47,11 @@ export function AdminDashboard({
     };
 
     const handleDeleteHistory = async (locationId: string) => {
+        if (isDeleting) return;
+        setIsDeleting(true);
         setConfirmingLocationId(null);
         const result = await deleteLocationHistory(locationId);
+        setIsDeleting(false);
         if (!result.success) {
             setError(result.error || 'Failed to delete history');
         } else {
@@ -245,7 +249,7 @@ function LocationsView({
     handleDeleteHistory,
 }: {
     locations: Location[];
-    locationOrderCounts: Record<string, { open: number; total: number }>;
+    locationOrderCounts: Record<string, { open: number; done: number; total: number }>;
     confirmingLocationId: string | null;
     setConfirmingLocationId: (id: string | null) => void;
     handleDeleteHistory: (id: string) => void;
@@ -279,7 +283,7 @@ function LocationsView({
                 <div className="space-y-2">
                     {locations.map(location => {
                         const counts = locationOrderCounts[location.id];
-                        const doneCount = (counts?.total ?? 0) - (counts?.open ?? 0);
+                        const doneCount = counts?.done ?? 0;
 
                         return (
                             <div

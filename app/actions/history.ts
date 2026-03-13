@@ -236,7 +236,10 @@ export async function clearHistory(userName: string) {
         }
 
         const { backupDatabaseSync } = await import('@/lib/backup');
-        backupDatabaseSync('clear-history');
+        const backup = backupDatabaseSync('clear-history');
+        if (!backup) {
+            return { success: false, error: 'Backup failed — aborting for safety' };
+        }
 
         db.transaction((tx) => {
             // Delete all existing log entries

@@ -123,6 +123,11 @@ export async function submitVolunteerRequest(
     customRequest?: string
 ) {
     try {
+        // Validate text length to prevent abuse
+        if (customRequest && customRequest.length > 1000) {
+            return { success: false, error: 'Request text is too long (max 1000 characters)' };
+        }
+
         const isTextRequest = !!customRequest?.trim();
 
         if (!isTextRequest) {
@@ -509,20 +514,21 @@ export async function cancelOrder(orderId: string, locationName: string) {
     }
 }
 
-export async function getLocationOrderCounts(): Promise<Record<string, { open: number; total: number }>> {
+export async function getLocationOrderCounts(): Promise<Record<string, { open: number; done: number; total: number }>> {
     try {
         const rows = await db
             .select({
                 locationId: orders.locationId,
                 open: sql<number>`sum(case when ${orders.status} not in ('done', 'cancelled') then 1 else 0 end)`,
+                done: sql<number>`sum(case when ${orders.status} = 'done' then 1 else 0 end)`,
                 total: sql<number>`count(*)`,
             })
             .from(orders)
             .groupBy(orders.locationId);
 
-        const result: Record<string, { open: number; total: number }> = {};
+        const result: Record<string, { open: number; done: number; total: number }> = {};
         for (const row of rows) {
-            result[row.locationId] = { open: Number(row.open), total: Number(row.total) };
+            result[row.locationId] = { open: Number(row.open), done: Number(row.done), total: Number(row.total) };
         }
         return result;
     } catch {
@@ -533,7 +539,10 @@ export async function getLocationOrderCounts(): Promise<Record<string, { open: n
 export async function deleteLocationHistory(locationId: string) {
     try {
         const { backupDatabaseSync } = await import('@/lib/backup');
-        backupDatabaseSync('delete-loc-history');
+        const backup = backupDatabaseSync('delete-loc-history');
+        if (!backup) {
+            return { success: false, error: 'Backup failed — aborting deletion for safety' };
+        }
 
         // Delete completed orders for this location (status = 'done')
         // order_items cascade-delete via FK
@@ -554,7 +563,10 @@ export async function deleteLocationHistory(locationId: string) {
 export async function deleteOrder(orderId: string) {
     try {
         const { backupDatabaseSync } = await import('@/lib/backup');
-        backupDatabaseSync('delete-order');
+        const backup = backupDatabaseSync('delete-order');
+        if (!backup) {
+            return { success: false, error: 'Backup failed — aborting deletion for safety' };
+        }
 
         await db.delete(orders).where(eq(orders.id, orderId));
         revalidatePath('/orders');

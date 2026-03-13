@@ -45,6 +45,9 @@ export async function createRunner(name: string) {
         if (!trimmed) {
             return { success: false, error: 'Name cannot be empty' };
         }
+        if (trimmed.length > 50) {
+            return { success: false, error: 'Name is too long (max 50 characters)' };
+        }
 
         const newRunner = await db
             .insert(runners)
@@ -79,7 +82,10 @@ export async function clearRunnerCookie() {
 export async function deleteRunner(runnerId: string) {
     try {
         const { backupDatabaseSync } = await import('@/lib/backup');
-        backupDatabaseSync('delete-runner');
+        const backup = backupDatabaseSync('delete-runner');
+        if (!backup) {
+            return { success: false, error: 'Backup failed — aborting deletion for safety' };
+        }
 
         // Manually clear runner_id on orders (FK cascade not enforced without PRAGMA foreign_keys = ON)
         await db.update(orders).set({ runnerId: null }).where(eq(orders.runnerId, runnerId));

@@ -211,6 +211,7 @@ export function VolunteerRequestForm({ location, availableItems }: VolunteerRequ
                             onChange={(e) => setTextRequest(e.target.value)}
                             placeholder="Describe what you need…"
                             rows={7}
+                            maxLength={1000}
                             className="w-full rounded-xl bg-grape border border-esbee text-white text-base px-4 py-3 focus:border-cerise focus:ring-1 focus:ring-cerise focus:outline-none resize-none placeholder:text-slate-500"
                         />
                     </div>
@@ -571,6 +572,7 @@ function CustomRequestModal({
                                 onChange={(e) => onTextChange(e.target.value)}
                                 placeholder="Describe what you need…"
                                 rows={5}
+                                maxLength={1000}
                                 autoFocus
                                 className="w-full rounded-xl bg-night border border-esbee text-white text-base px-4 py-3 mb-4 focus:border-cerise focus:ring-1 focus:ring-cerise focus:outline-none resize-none placeholder:text-slate-500"
                             />
