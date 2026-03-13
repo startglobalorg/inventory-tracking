@@ -13,6 +13,8 @@ services:
       - NODE_ENV=production
       - DATABASE_URL=/app/sqlite-data/sqlite.db
       - ADMIN_PASSWORD=${ADMIN_PASSWORD:-changeme}
+      - VOLUNTEER_PIN=${VOLUNTEER_PIN:-}
+      - BASE_URL=${BASE_URL:-}
     volumes:
       - sqlite-data:/app/sqlite-data
 
