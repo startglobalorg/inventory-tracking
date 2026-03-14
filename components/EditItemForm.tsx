@@ -90,7 +90,7 @@ export function EditItemForm({ item, existingLimits = {} }: { item: Item; existi
         setIsSavingLimits(true);
         try {
             const limitsToSave = Object.entries(limitValues)
-                .filter(([, val]) => val.trim() !== '' && parseInt(val, 10) > 0)
+                .filter(([, val]) => val.trim() !== '' && parseInt(val, 10) >= 0)
                 .map(([locationId, val]) => ({ locationId, maxLimit: parseInt(val, 10) }));
 
             const result = await setLimits(item.id, limitsToSave);

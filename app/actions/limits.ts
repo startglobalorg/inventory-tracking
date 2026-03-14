@@ -23,7 +23,7 @@ export async function setLimits(
 
             // Insert new limits
             for (const { locationId, maxLimit } of limits) {
-                if (maxLimit > 0) {
+                if (maxLimit >= 0) {
                     tx.insert(locationItemLimits)
                         .values({ locationId, itemId, maxLimit })
                         .run();

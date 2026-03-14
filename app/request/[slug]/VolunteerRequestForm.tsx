@@ -313,6 +313,9 @@ export function VolunteerRequestForm({ location, availableItems, limits, usage }
                                         const hasLimit = maxLimit !== undefined;
                                         const limitReached = hasLimit && totalUsed >= maxLimit;
 
+                                        // Hide item entirely if limit is 0
+                                        if (hasLimit && maxLimit === 0) return null;
+
                                         return (
                                             <div
                                                 key={item.id}
