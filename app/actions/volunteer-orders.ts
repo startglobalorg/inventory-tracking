@@ -32,6 +32,8 @@ export interface OrderWithDetails {
 export async function getLocations() {
     try {
         const allLocations = await db.select().from(locations).orderBy(asc(locations.name));
+        // Natural sort so "Coffee Point 2" comes before "Coffee Point 10"
+        allLocations.sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }));
         return { success: true, data: allLocations };
     } catch (error) {
         console.error('Error fetching locations:', error);
