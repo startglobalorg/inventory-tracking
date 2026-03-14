@@ -270,7 +270,7 @@ export function EditItemForm({ item, existingLimits = {} }: { item: Item; existi
                         <p className="text-sm text-slate-500">Loading locations...</p>
                     ) : (
                         <div className="space-y-3">
-                            {locations.map(loc => (
+                            {locations.filter(loc => loc.type === 'inventory').map(loc => (
                                 <div key={loc.id} className="flex items-center gap-3">
                                     <label htmlFor={`limit-${loc.id}`} className="flex-1 text-sm text-slate-300 truncate">
                                         {loc.name}
