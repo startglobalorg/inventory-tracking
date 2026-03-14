@@ -1,4 +1,4 @@
-import { sqliteTable, text, integer, index } from 'drizzle-orm/sqlite-core';
+import { sqliteTable, text, integer, index, unique } from 'drizzle-orm/sqlite-core';
 import { sql } from 'drizzle-orm';
 
 // Items table - stores inventory items
@@ -104,6 +104,21 @@ export const orderItems = sqliteTable('order_items', {
     index('order_items_item_id_idx').on(table.itemId),
 ]);
 
+// Location item limits table - per-location, per-item order caps
+export const locationItemLimits = sqliteTable('location_item_limits', {
+    id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+    locationId: text('location_id')
+        .notNull()
+        .references(() => locations.id, { onDelete: 'cascade' }),
+    itemId: text('item_id')
+        .notNull()
+        .references(() => items.id, { onDelete: 'cascade' }),
+    maxLimit: integer('max_limit').notNull(),
+}, (table) => [
+    index('location_item_limits_loc_item_idx').on(table.locationId, table.itemId),
+    unique('location_item_limits_loc_item_unique').on(table.locationId, table.itemId),
+]);
+
 // Type exports
 export type Runner = typeof runners.$inferSelect;
 export type NewRunner = typeof runners.$inferInsert;
@@ -117,3 +132,5 @@ export type Order = typeof orders.$inferSelect;
 export type NewOrder = typeof orders.$inferInsert;
 export type OrderItem = typeof orderItems.$inferSelect;
 export type NewOrderItem = typeof orderItems.$inferInsert;
+export type LocationItemLimit = typeof locationItemLimits.$inferSelect;
+export type NewLocationItemLimit = typeof locationItemLimits.$inferInsert;

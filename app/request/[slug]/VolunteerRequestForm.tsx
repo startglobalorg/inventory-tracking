@@ -18,9 +18,11 @@ interface AvailableItem {
 interface VolunteerRequestFormProps {
     location: Location;
     availableItems: AvailableItem[];
+    limits: Record<string, number>;  // itemId -> maxLimit
+    usage: Record<string, number>;   // itemId -> totalOrdered
 }
 
-export function VolunteerRequestForm({ location, availableItems }: VolunteerRequestFormProps) {
+export function VolunteerRequestForm({ location, availableItems, limits, usage }: VolunteerRequestFormProps) {
     const [quantities, setQuantities] = useState<Record<string, number>>({});
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isSuccess, setIsSuccess] = useState(false);
@@ -305,12 +307,20 @@ export function VolunteerRequestForm({ location, availableItems }: VolunteerRequ
                                         const caseSize = item.quantityPerUnit || 1;
                                         const unitName = item.unitName || 'case';
 
+                                        // Check if this item has a limit for this location
+                                        const maxLimit = limits[item.id];
+                                        const totalUsed = (usage[item.id] || 0) + qty;
+                                        const hasLimit = maxLimit !== undefined;
+                                        const limitReached = hasLimit && totalUsed >= maxLimit;
+
                                         return (
                                             <div
                                                 key={item.id}
-                                                className={`rounded-xl bg-grape border p-4 transition-all ${qty > 0
-                                                    ? 'border-cerise ring-1 ring-cerise/50'
-                                                    : 'border-esbee'
+                                                className={`rounded-xl bg-grape border p-4 transition-all ${limitReached && qty === 0
+                                                    ? 'border-esbee opacity-60'
+                                                    : qty > 0
+                                                        ? 'border-cerise ring-1 ring-cerise/50'
+                                                        : 'border-esbee'
                                                     }`}
                                             >
                                                 <div className="space-y-3">
@@ -319,9 +329,15 @@ export function VolunteerRequestForm({ location, availableItems }: VolunteerRequ
                                                             <h3 className="font-bold text-white">
                                                                 {item.name}
                                                             </h3>
-                                                            <p className="text-xs text-green-400 mt-0.5">
-                                                                In Stock
-                                                            </p>
+                                                            {limitReached && qty === 0 ? (
+                                                                <p className="text-xs text-red-400 font-semibold mt-0.5">
+                                                                    Limit Reached
+                                                                </p>
+                                                            ) : (
+                                                                <p className="text-xs text-green-400 mt-0.5">
+                                                                    In Stock
+                                                                </p>
+                                                            )}
                                                         </div>
                                                         {qty > 0 && (
                                                             <span className="rounded-full bg-cerise px-3 py-1 text-sm font-bold text-white">
@@ -329,26 +345,30 @@ export function VolunteerRequestForm({ location, availableItems }: VolunteerRequ
                                                             </span>
                                                         )}
                                                     </div>
+                                                    {limitReached && qty === 0 ? null : (
                                                     <div className="flex flex-col gap-2">
                                                         <div className="flex gap-2">
                                                             {hasCase && (
                                                                 <button
                                                                     onClick={() => updateQuantity(item.id, caseSize)}
-                                                                    className="flex-1 rounded-lg bg-cerise px-4 py-3 text-sm font-bold text-white hover:bg-jayouh active:scale-95 transition-all"
+                                                                    disabled={limitReached}
+                                                                    className="flex-1 rounded-lg bg-cerise px-4 py-3 text-sm font-bold text-white hover:bg-jayouh active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                                                                 >
                                                                     +1 {unitName} ({caseSize})
                                                                 </button>
                                                             )}
                                                             <button
                                                                 onClick={() => updateQuantity(item.id, 1)}
-                                                                className={`rounded-lg bg-grape border border-esbee px-4 py-3 text-sm font-bold text-white hover:bg-esbee/50 active:scale-95 transition-all ${hasCase ? 'flex-1' : 'flex-1'}`}
+                                                                disabled={limitReached}
+                                                                className={`rounded-lg bg-grape border border-esbee px-4 py-3 text-sm font-bold text-white hover:bg-esbee/50 active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed ${hasCase ? 'flex-1' : 'flex-1'}`}
                                                             >
                                                                 +1 item
                                                             </button>
                                                             {!hasCase && (
                                                                 <button
                                                                     onClick={() => toggleCustomInput(item.id)}
-                                                                    className={`flex-1 rounded-lg px-4 py-3 text-sm font-bold transition-all active:scale-95 ${customInputOpen[item.id]
+                                                                    disabled={limitReached}
+                                                                    className={`flex-1 rounded-lg px-4 py-3 text-sm font-bold transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed ${customInputOpen[item.id]
                                                                             ? 'bg-cerise text-white'
                                                                             : 'bg-grape border border-esbee text-white hover:bg-esbee/30'
                                                                         }`}
@@ -392,6 +412,7 @@ export function VolunteerRequestForm({ location, availableItems }: VolunteerRequ
                                                             </div>
                                                         )}
                                                     </div>
+                                                    )}
                                                 </div>
                                             </div>
                                         );

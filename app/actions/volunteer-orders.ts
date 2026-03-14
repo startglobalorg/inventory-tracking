@@ -1,8 +1,8 @@
 'use server';
 
 import { db } from '@/db/db';
-import { locations, orders, orderItems, items, runners } from '@/db/schema';
-import { eq, asc, desc, gt, inArray, or, isNull, and, sql } from 'drizzle-orm';
+import { locations, orders, orderItems, items, runners, locationItemLimits } from '@/db/schema';
+import { eq, asc, desc, gt, inArray, or, isNull, and, ne, sql } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
 
 // Types
@@ -180,6 +180,51 @@ export async function submitVolunteerRequest(
             const existingIds = new Set(existingItems.map(i => i.id));
             const missingIds = itemIds.filter(id => !existingIds.has(id));
             if (missingIds.length > 0) throw new Error('Some requested items no longer exist');
+
+            // Enforce location item limits
+            const limits = tx
+                .select({ itemId: locationItemLimits.itemId, maxLimit: locationItemLimits.maxLimit })
+                .from(locationItemLimits)
+                .where(and(
+                    eq(locationItemLimits.locationId, locationId),
+                    inArray(locationItemLimits.itemId, itemIds)
+                ))
+                .all();
+
+            if (limits.length > 0) {
+                const limitMap = new Map(limits.map(l => [l.itemId, l.maxLimit]));
+
+                // Get item names for error messages
+                const itemNameRows = tx
+                    .select({ id: items.id, name: items.name })
+                    .from(items)
+                    .where(inArray(items.id, [...limitMap.keys()]))
+                    .all();
+                const itemNameMap = new Map(itemNameRows.map(r => [r.id, r.name]));
+
+                for (const [itemId, quantity] of validItems) {
+                    const maxLimit = limitMap.get(itemId);
+                    if (maxLimit === undefined) continue; // no limit for this item
+
+                    // Sum past non-cancelled orders for this location+item
+                    const usageRow = tx
+                        .select({ total: sql<number>`coalesce(sum(${orderItems.quantity}), 0)` })
+                        .from(orderItems)
+                        .innerJoin(orders, eq(orderItems.orderId, orders.id))
+                        .where(and(
+                            eq(orders.locationId, locationId),
+                            eq(orderItems.itemId, itemId),
+                            ne(orders.status, 'cancelled')
+                        ))
+                        .all();
+
+                    const totalOrdered = Number(usageRow[0]?.total ?? 0);
+                    if (totalOrdered + quantity > maxLimit) {
+                        const itemName = itemNameMap.get(itemId) || 'Unknown item';
+                        throw new Error(`Limit reached for ${itemName}. You cannot order more of this item.`);
+                    }
+                }
+            }
 
             const newOrder = tx
                 .insert(orders)

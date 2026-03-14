@@ -1,4 +1,5 @@
 import { getLocationBySlug, getAvailableItems } from '@/app/actions/volunteer-orders';
+import { getLimitsForLocation, getLocationItemUsage } from '@/app/actions/limits';
 import { VolunteerRequestForm } from './VolunteerRequestForm';
 import Link from 'next/link';
 
@@ -44,11 +45,22 @@ export default async function VolunteerRequestPage({
 
     const items = itemsResult.success ? itemsResult.data || [] : [];
 
+    // Fetch limits and usage for this location
+    const [limitsResult, usageResult] = await Promise.all([
+        getLimitsForLocation(locationResult.data.id),
+        getLocationItemUsage(locationResult.data.id),
+    ]);
+
+    const limits = limitsResult.success ? limitsResult.data || {} : {};
+    const usage = usageResult.success ? usageResult.data || {} : {};
+
     return (
         <main className="min-h-screen bg-slate-900">
             <VolunteerRequestForm
                 location={locationResult.data}
                 availableItems={items}
+                limits={limits}
+                usage={usage}
             />
         </main>
     );

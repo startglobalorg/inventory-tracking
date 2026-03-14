@@ -72,6 +72,7 @@ npm run db:seed          # Seed database with initial items (see db/seed.ts)
 | **Locations** | 12 Coffee Points + Accreditation seeded | `db/seed.ts` |
 | **Runner Assignment** | Assign orders to named runners from fulfillment dashboard | `app/orders/FulfillmentDashboard.tsx` |
 | **Runner Dashboard** | Mobile view for runners to claim and complete orders | `app/runner/page.tsx` |
+| **Location Order Limits** | Per-location, per-item caps on total order quantity | `app/actions/limits.ts`, `db/schema.ts` |
 
 **Workflow:**
 1. Volunteer scans QR code → `/request/coffee-point-1`
@@ -117,7 +118,8 @@ app/
     ├── history.ts        # Order history queries
     ├── webhook.ts        # Low stock notifications
     ├── volunteer-orders.ts  # Volunteer order management
-    └── runners.ts        # Runner CRUD, cookie management, assignment actions
+    ├── runners.ts        # Runner CRUD, cookie management, assignment actions
+    └── limits.ts         # Location item order limits (CRUD + usage queries)
 ```
 
 ### Database Schema
@@ -180,6 +182,15 @@ app/
   itemId: text (FK to items)
   quantity: integer
 }
+
+// location_item_limits table (per-location order caps)
+{
+  id: text (UUID, primary key)
+  locationId: text (FK to locations, cascade)
+  itemId: text (FK to items, cascade)
+  maxLimit: integer
+  // unique constraint on (locationId, itemId)
+}
 ```
 
 ### Server Actions
@@ -213,6 +224,10 @@ app/
 | `claimOrder()` | `app/actions/runners.ts` | Atomically claim order + set in_progress (runner) |
 | `getUnassignedOrders()` | `app/actions/runners.ts` | Orders with status=new and no runner |
 | `getRunnerOrders()` | `app/actions/runners.ts` | Non-done orders assigned to a specific runner |
+| `setLimits()` | `app/actions/limits.ts` | Set per-location order limits for an item |
+| `getLimitsForItem()` | `app/actions/limits.ts` | Get all limits for an item (admin UI) |
+| `getLimitsForLocation()` | `app/actions/limits.ts` | Get all limits for a location (volunteer form) |
+| `getLocationItemUsage()` | `app/actions/limits.ts` | Total ordered per item for a location |
 
 ### Component Architecture
 
@@ -316,6 +331,7 @@ Potential improvements:
 | `app/actions.ts` | Item CRUD operations |
 | `app/actions/order.ts` | Order submission logic |
 | `app/actions/volunteer-orders.ts` | Volunteer order management |
+| `app/actions/limits.ts` | Location order limit management |
 | `components/CartProvider.tsx` | Cart state management |
 | `components/CartInitializer.tsx` | URL param cart loading |
 | `components/InventoryCard.tsx` | Main item UI component |

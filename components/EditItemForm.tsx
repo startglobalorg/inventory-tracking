@@ -4,17 +4,27 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { updateItem, deleteItem } from '@/app/actions';
 import { getLocations } from '@/app/actions/volunteer-orders';
+import { setLimits } from '@/app/actions/limits';
 import { useToast } from './ToastProvider';
 import type { Item, Location } from '@/db/schema';
 import Link from 'next/link';
 
-export function EditItemForm({ item }: { item: Item }) {
+export function EditItemForm({ item, existingLimits = {} }: { item: Item; existingLimits?: Record<string, number> }) {
     const router = useRouter();
     const { showToast } = useToast();
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
     const [locations, setLocations] = useState<Location[]>([]);
+
+    const [limitValues, setLimitValues] = useState<Record<string, string>>(() => {
+        const initial: Record<string, string> = {};
+        for (const [locId, max] of Object.entries(existingLimits)) {
+            initial[locId] = String(max);
+        }
+        return initial;
+    });
+    const [isSavingLimits, setIsSavingLimits] = useState(false);
 
     useEffect(() => {
         getLocations().then(r => { if (r.success && r.data) setLocations(r.data); });
@@ -73,6 +83,26 @@ export function EditItemForm({ item }: { item: Item }) {
         } finally {
             setIsDeleting(false);
             setShowDeleteConfirm(false);
+        }
+    };
+
+    const handleSaveLimits = async () => {
+        setIsSavingLimits(true);
+        try {
+            const limitsToSave = Object.entries(limitValues)
+                .filter(([, val]) => val.trim() !== '' && parseInt(val, 10) > 0)
+                .map(([locationId, val]) => ({ locationId, maxLimit: parseInt(val, 10) }));
+
+            const result = await setLimits(item.id, limitsToSave);
+            if (result.success) {
+                showToast('Limits saved!', 'success');
+            } else {
+                showToast(result.error || 'Failed to save limits', 'error');
+            }
+        } catch {
+            showToast('An error occurred saving limits', 'error');
+        } finally {
+            setIsSavingLimits(false);
         }
     };
 
@@ -228,6 +258,45 @@ export function EditItemForm({ item }: { item: Item }) {
                         </select>
                         <p className="mt-1 text-xs text-slate-500">If set, only this location can order this item</p>
                     </div>
+                </div>
+
+                {/* Location Limits */}
+                <div className="rounded-xl bg-night border border-esbee p-6 space-y-4">
+                    <div>
+                        <h2 className="text-lg font-bold text-white mb-1">Location Limits</h2>
+                        <p className="text-xs text-slate-500">Set the maximum total quantity each location can order for this item. Leave blank for no limit.</p>
+                    </div>
+                    {locations.length === 0 ? (
+                        <p className="text-sm text-slate-500">Loading locations...</p>
+                    ) : (
+                        <div className="space-y-3">
+                            {locations.map(loc => (
+                                <div key={loc.id} className="flex items-center gap-3">
+                                    <label htmlFor={`limit-${loc.id}`} className="flex-1 text-sm text-slate-300 truncate">
+                                        {loc.name}
+                                    </label>
+                                    <input
+                                        type="number"
+                                        id={`limit-${loc.id}`}
+                                        inputMode="numeric"
+                                        min="0"
+                                        placeholder="No limit"
+                                        value={limitValues[loc.id] || ''}
+                                        onChange={(e) => setLimitValues(prev => ({ ...prev, [loc.id]: e.target.value }))}
+                                        className="w-28 rounded-lg border border-esbee bg-grape px-3 py-2 text-white text-sm placeholder-slate-600 focus:border-cerise focus:outline-none focus:ring-2 focus:ring-cerise/20"
+                                    />
+                                </div>
+                            ))}
+                            <button
+                                type="button"
+                                onClick={handleSaveLimits}
+                                disabled={isSavingLimits}
+                                className="rounded-lg bg-cerise px-5 py-2.5 text-sm font-semibold text-white hover:bg-jayouh disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                            >
+                                {isSavingLimits ? 'Saving...' : 'Save Limits'}
+                            </button>
+                        </div>
+                    )}
                 </div>
 
                 {/* Action Buttons */}

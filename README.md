@@ -36,6 +36,7 @@ This system has **two main user interfaces**:
 - **Batch Operations**: Order by cases/boxes or individual items
 - **Low Stock Alerts**: Automatic Slack notifications via webhook
 - **Full Audit Trail**: Complete history with edit capability
+- **Location Order Limits**: Set per-location caps on how much of each item can be ordered (e.g., max 55 cans of Chiefs for Summit 1). Configured from the item edit page; enforced at order time.
 - **Mobile-Optimized**: Touch-friendly interface for all users
 
 ## Getting Started
@@ -161,7 +162,18 @@ Generate QR codes for volunteer request URLs using any QR code generator:
 - **Track consumption**: Main page (`/`) shows current stock
 - **Restock items**: Use `/restock` when deliveries arrive
 - **View history**: See all logs and statistics at `/history`
-- **Manage items**: Add/edit items via `/ add-item` and item detail pages
+- **Manage items**: Add/edit items via `/add-item` and item detail pages
+
+### Setting Location Order Limits
+
+Coordinators can cap how much of a specific item each location is allowed to order over the entire event:
+
+1. Go to the **item edit page** (`/item/[id]`) for the item you want to limit
+2. Scroll to the **Location Limits** section
+3. Enter the maximum total quantity for each location (leave blank for no limit)
+4. Click **Save Limits**
+
+When a location reaches its limit, the item shows "Limit Reached" on their request form and they can no longer add it. The server also enforces the limit — orders that exceed it are rejected.
 
 ## Tech Stack
 
