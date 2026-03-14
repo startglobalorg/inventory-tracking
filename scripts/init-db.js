@@ -177,6 +177,19 @@ if (!dbExists) {
             console.log('items.restricted_to_location_slug column: OK');
         }
 
+        // ── location_item_limits table ─────────────────────────────────
+        db.exec(`
+            CREATE TABLE IF NOT EXISTS location_item_limits (
+                id TEXT PRIMARY KEY,
+                location_id TEXT NOT NULL REFERENCES locations(id) ON DELETE CASCADE,
+                item_id TEXT NOT NULL REFERENCES items(id) ON DELETE CASCADE,
+                max_limit INTEGER NOT NULL
+            )
+        `);
+        db.exec('CREATE UNIQUE INDEX IF NOT EXISTS location_item_limits_loc_item_unique ON location_item_limits(location_id, item_id)');
+        db.exec('CREATE INDEX IF NOT EXISTS location_item_limits_loc_item_idx ON location_item_limits(location_id, item_id)');
+        console.log('location_item_limits table: OK');
+
         // ── Seed data (INSERT OR IGNORE — safe to run repeatedly) ─────
 
         // Fix Accreditation to use text-based request form
