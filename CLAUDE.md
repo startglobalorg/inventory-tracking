@@ -1,351 +1,110 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
-
 ## Project Overview
 
-This is a Next.js 16 full-stack inventory management system for coffee points and other locations at START Summit x Hack 2026. It tracks stock levels with dual operating modes: **consumption tracking** (when items are taken) and **restocking** (when supplier deliveries arrive). All inventory changes are logged with full audit trails.
+Next.js 16 full-stack inventory management system for coffee points at START Summit x Hack 2026. Dual modes: **consumption tracking** and **restocking**. Volunteers request items via QR code → coordinators fulfill → runners deliver.
 
-## Technology Stack
+**Stack:** Next.js 16 (App Router), TypeScript 5, Drizzle ORM 0.40 + SQLite (better-sqlite3), Tailwind CSS 4, React 19.
 
-- **Next.js 16** with App Router (React Server Components + Client Components)
-- **TypeScript 5** with strict type checking
-- **Drizzle ORM 0.40** with SQLite (better-sqlite3)
-- **Tailwind CSS 4** for styling
-- **React 19** with Context API for cart state management
-
-## Development Commands
+## Commands
 
 ```bash
-npm run dev              # Start dev server on http://localhost:3000
-npm run build            # Create production build (standalone output)
-npm start                # Run production build
-npm run lint             # Run ESLint12
-
-npm run db:push          # Apply schema changes to database
-npm run db:studio        # Open Drizzle Studio (web UI for database)
-npm run db:seed          # Seed database with initial items (see db/seed.ts)
+npm run dev          # Dev server on :3000
+npm run build        # Production build (standalone)
+npm run db:push      # Apply schema changes (needs TTY)
+npm run db:studio    # Drizzle Studio (DB UI)
+npm run db:seed      # Seed items + 13 locations
 ```
 
-**Docker deployment**: Multi-stage build with Alpine base. Production runs on port 3001 (mapped from internal 3000). See `docker-compose.prod.yml`.
+**Docker:** `docker compose -f docker-compose.prod.yml up -d` (port 3001). Env: `DATABASE_URL=/app/sqlite-data/sqlite.db`.
 
----
-
-## Current Features (as of Feb 2026)
-
-### Core Functionality
-
-| Feature | Description | Files |
-|---------|-------------|-------|
-| **Consume Mode** | Track items taken from stock | `app/page.tsx` |
-| **Restock Mode** | Record supplier deliveries | `app/restock/page.tsx` |
-| **Order History** | View all past transactions with edit/delete | `app/orders/page.tsx` |
-| **Statistics Dashboard** | Consumption trends, top items, category breakdown | `components/StatsDashboard.tsx` |
-| **Item Management** | Full CRUD for inventory items | `app/item/[id]/page.tsx`, `app/add-item/page.tsx` |
-| **Low Stock Alerts** | Webhook notifications via n8n/Slack | `app/actions/webhook.ts` |
-
-### Ordering Options
-
-| Option | Description |
-|--------|-------------|
-| **Batch Button** | Quick "Take 24 (case)" for full units |
-| **Custom Units** | Enter number of cases/boxes to take |
-| **Custom Items** | Enter exact number of individual items |
-
-### Recent Additions
-
-- **Item Edit Page** (`/item/[id]`) - Edit all item properties, delete items
-- **Auto-generated SKU** - SKU created from category-name-size pattern (ensures uniqueness)
-- **Searchable Brand Dropdown** - 28 predefined brands + custom option
-- **Custom Unit Ordering** - Order by cases/boxes, not just individual items
-- **Delete Functionality** - Remove items with confirmation modal
-- **Mobile Optimization** - Responsive design, touch-friendly buttons
-
-### Volunteer Ordering System (START Summit x Hack 2026)
-
-| Feature | Description | Files |
-|---------|-------------|-------|
-| **Volunteer Request** | Public mobile form for volunteers to request items | `app/request/[slug]/page.tsx` |
-| **Location Order History** | View past orders for each coffee point | `app/request/[slug]/history/page.tsx` |
-| **Order Fulfillment** | Kanban/list view for inventory team | `app/orders/page.tsx` |
-| **Prepare Order** | Load volunteer request into cart for fulfillment | `components/CartInitializer.tsx` |
-| **Locations** | 12 Coffee Points + Accreditation seeded | `db/seed.ts` |
-| **Runner Assignment** | Assign orders to named runners from fulfillment dashboard | `app/orders/FulfillmentDashboard.tsx` |
-| **Runner Dashboard** | Mobile view for runners to claim and complete orders | `app/runner/page.tsx` |
-| **Location Order Limits** | Per-location, per-item caps on total order quantity | `app/actions/limits.ts`, `db/schema.ts` |
-
-**Workflow:**
-1. Volunteer scans QR code → `/request/coffee-point-1`
-2. Selects items needed (no stock numbers shown, can order by case/unit)
-3. Submits request → Order status: `new`
-4. Can view past orders → `/request/coffee-point-1/history`
-5. Inventory team sees order in `/orders`
-6. Coordinator assigns order to a runner via dropdown (or runner self-assigns at `/runner`)
-7. Clicks "Prepare Order" → Items loaded into cart on main page
-8. Adjusts quantities if needed, submits → Stock deducted, order marked `done`
-
-**Runner Workflow:**
-1. Runner opens `/runner` on their phone
-2. Selects their name from the list (or registers as a new runner — sets a 3-day cookie)
-3. "Unassigned Orders" section shows all `new` orders with no runner
-4. Runner taps "Claim" → order moves to their "My Orders" section, status → `in_progress`
-5. Runner delivers items, taps "Mark Done" → order status → `done`
-6. Dashboard auto-refreshes every 15 seconds
-
----
-
-## Architecture Overview
-
-### Page Structure
+## Page Structure
 
 ```
 app/
-├── page.tsx              # Consume mode (main inventory view)
-├── restock/page.tsx      # Restock mode (supplier deliveries)
-├── history/page.tsx      # Order history + statistics
-├── orders/page.tsx       # Volunteer order fulfillment dashboard
-├── add-item/page.tsx     # Create new items
-├── item/[id]/page.tsx    # Edit/delete individual items
-├── runner/
-│   ├── page.tsx          # Runner dashboard (server component)
-│   └── RunnerApp.tsx     # Runner soft-login + claim/complete UI (client)
-├── request/[slug]/
-│   ├── page.tsx          # Volunteer request form (public)
-│   └── history/page.tsx  # Location-specific order history
-├── actions.ts            # Item CRUD server actions
+├── page.tsx                    # Consume mode (main inventory)
+├── restock/page.tsx            # Supplier deliveries
+├── history/page.tsx            # Order history + statistics
+├── orders/page.tsx             # Fulfillment dashboard
+├── add-item/page.tsx           # Create items
+├── item/[id]/page.tsx          # Edit/delete items + location limits
+├── runner/page.tsx              # Runner dashboard (claim/complete)
+├── request/[slug]/page.tsx     # Volunteer request form (public)
+├── request/[slug]/history/     # Location order history
+├── actions.ts                  # Item CRUD
 └── actions/
-    ├── order.ts          # submitOrder (batch stock updates)
-    ├── history.ts        # Order history queries
-    ├── webhook.ts        # Low stock notifications
-    ├── volunteer-orders.ts  # Volunteer order management
-    ├── runners.ts        # Runner CRUD, cookie management, assignment actions
-    └── limits.ts         # Location item order limits (CRUD + usage queries)
+    ├── order.ts                # submitOrder (batch stock updates)
+    ├── history.ts              # Order history queries
+    ├── webhook.ts              # Low stock alerts (n8n/Slack)
+    ├── volunteer-orders.ts     # Volunteer order management
+    ├── runners.ts              # Runner CRUD + assignment
+    └── limits.ts               # Location order limits (CRUD + usage)
 ```
 
-### Database Schema
+## Database Schema (`db/schema.ts`)
 
-**File:** `db/schema.ts`
+| Table | Key Columns | Notes |
+|-------|------------|-------|
+| `items` | id, name, sku (unique), stock, category, quantityPerUnit, unitName, coldStorage, restrictedToLocationSlug | Core inventory |
+| `logs` | id, itemId (FK→items, SET NULL), changeAmount, reason (consumed/restocked/adjustment/cleared) | Audit trail |
+| `locations` | id, name, slug (unique), type (inventory/text), accessPin | Volunteer stations |
+| `orders` | id, locationId (FK→locations), runnerId (FK→runners, SET NULL), status (new/in_progress/done/cancelled), customRequest, storageType | Volunteer requests |
+| `order_items` | id, orderId (FK→orders, CASCADE), itemId (FK→items, CASCADE), quantity | Order line items |
+| `runners` | id, name (unique) | Delivery staff |
+| `location_item_limits` | id, locationId (FK→locations, CASCADE), itemId (FK→items, CASCADE), maxLimit | Per-location order caps. Unique on (locationId, itemId). No record = unlimited. |
 
-```typescript
-// items table
-{
-  id: text (UUID, primary key)
-  name: text
-  sku: text (unique)
-  stock: integer
-  minThreshold: integer
-  category: text
-  quantityPerUnit: integer (e.g., 24 for a case)
-  unitName: text (e.g., "case", "box")
-  createdAt: timestamp
-}
+## Key Workflows
 
-// logs table (audit trail)
-{
-  id: text (UUID, primary key)
-  itemId: text (FK to items)
-  changeAmount: integer (positive or negative)
-  reason: enum ('consumed' | 'restocked' | 'adjustment')
-  userName: text
-  createdAt: timestamp
-}
+**Volunteer ordering:** Scan QR → `/request/[slug]` → select items → submit → order status `new` → coordinator assigns runner at `/orders` (or runner self-assigns at `/runner`) → "Prepare Order" loads cart → submit deducts stock, marks `done`.
 
-// runners table
-{
-  id: text (UUID, primary key)
-  name: text (unique)
-  createdAt: timestamp
-}
+**Runner:** Opens `/runner` → soft login via name (3-day cookie) → sees "My Orders" + can claim unassigned → delivers → taps "Mark Done". Auto-refreshes every 15s.
 
-// locations table (volunteer stations)
-{
-  id: text (UUID, primary key)
-  name: text (e.g., "Coffee Point 1")
-  slug: text (unique, for QR codes)
-  createdAt: timestamp
-}
+**Location limits:** Coordinators set max order quantities per item per location from the item edit page (`/item/[id]`). Enforced server-side in `submitVolunteerRequest` transaction. Volunteer form shows "Limit Reached" and disables buttons when cap is hit. Cancelled orders don't count toward usage.
 
-// orders table (volunteer requests)
-{
-  id: text (UUID, primary key)
-  locationId: text (FK to locations)
-  runnerId: text (FK to runners, nullable — SET NULL on runner delete)
-  status: enum ('new' | 'in_progress' | 'done')
-  createdAt: timestamp
-  completedAt: timestamp (nullable)
-}
+## Server Actions Reference
 
-// order_items table (line items)
-{
-  id: text (UUID, primary key)
-  orderId: text (FK to orders)
-  itemId: text (FK to items)
-  quantity: integer
-}
+| File | Key Actions |
+|------|------------|
+| `actions.ts` | `updateStock`, `createItem`, `updateItem`, `deleteItem` |
+| `actions/order.ts` | `submitOrder` (batch update) |
+| `actions/history.ts` | `getOrderHistory`, `getOrderStatistics`, `editOrderLog`, `deleteOrderLog` |
+| `actions/webhook.ts` | `notifyLowStock` |
+| `actions/volunteer-orders.ts` | `getLocations`, `getLocationBySlug`, `getAvailableItems`, `submitVolunteerRequest`, `getOrders`, `getOrdersByLocation`, `updateOrderStatus`, `getOrderForCart`, `cancelOrder`, `deleteOrder` |
+| `actions/runners.ts` | `getRunners`, `createRunner`, `setRunnerCookie`, `clearRunnerCookie`, `assignOrder`, `claimOrder`, `getUnassignedOrders`, `getRunnerOrders` |
+| `actions/limits.ts` | `setLimits`, `getLimitsForItem`, `getLimitsForLocation`, `getLocationItemUsage` |
 
-// location_item_limits table (per-location order caps)
-{
-  id: text (UUID, primary key)
-  locationId: text (FK to locations, cascade)
-  itemId: text (FK to items, cascade)
-  maxLimit: integer
-  // unique constraint on (locationId, itemId)
-}
-```
+## Client Components
 
-### Server Actions
+| Component | Purpose |
+|-----------|---------|
+| `CartProvider.tsx` | Cart state context (itemId → quantity delta, linkedOrderId) |
+| `CartSummary.tsx` | Floating review panel + submit (handles order fulfillment) |
+| `CartInitializer.tsx` | URL params → pre-populate cart from volunteer orders |
+| `InventoryCard.tsx` / `InventoryList.tsx` | Item cards with ordering buttons, grid with search/filter |
+| `EditItemForm.tsx` | Item edit form + delete + location limits section |
+| `VolunteerRequestForm.tsx` | Mobile volunteer form (`app/request/[slug]/`) |
+| `FulfillmentDashboard.tsx` | Kanban/list order view (`app/orders/`) |
+| `RunnerApp.tsx` | Runner soft-login + dashboard (`app/runner/`) |
 
-| Action | File | Purpose |
-|--------|------|---------|
-| `updateStock()` | `app/actions.ts` | Single item stock change |
-| `createItem()` | `app/actions.ts` | Add new item |
-| `updateItem()` | `app/actions.ts` | Edit item properties |
-| `deleteItem()` | `app/actions.ts` | Remove item + logs |
-| `submitOrder()` | `app/actions/order.ts` | Batch update multiple items |
-| `getOrderHistory()` | `app/actions/history.ts` | Fetch audit logs |
-| `getOrderStatistics()` | `app/actions/history.ts` | Consumption stats |
-| `editOrderLog()` | `app/actions/history.ts` | Modify log entry |
-| `deleteOrderLog()` | `app/actions/history.ts` | Remove log entry |
-| `notifyLowStock()` | `app/actions/webhook.ts` | Send webhook alert |
-| `getLocations()` | `app/actions/volunteer-orders.ts` | List all locations |
-| `getLocationBySlug()` | `app/actions/volunteer-orders.ts` | Get location by URL slug |
-| `getAvailableItems()` | `app/actions/volunteer-orders.ts` | Items with stock > 0 (no qty shown) |
-| `submitVolunteerRequest()` | `app/actions/volunteer-orders.ts` | Create new volunteer order |
-| `getOrders()` | `app/actions/volunteer-orders.ts` | Fetch orders with items |
-| `getOrdersByLocation()` | `app/actions/volunteer-orders.ts` | Fetch orders for specific location |
-| `updateOrderStatus()` | `app/actions/volunteer-orders.ts` | Change order status |
-| `getOrderForCart()` | `app/actions/volunteer-orders.ts` | Get order items for cart loading |
-| `getRunners()` | `app/actions/runners.ts` | List all runners |
-| `getRunnerById()` | `app/actions/runners.ts` | Validate runner exists (used by server component) |
-| `createRunner()` | `app/actions/runners.ts` | Create runner + set cookie |
-| `setRunnerCookie()` | `app/actions/runners.ts` | Set `runnerId` cookie (3-day, httpOnly) |
-| `clearRunnerCookie()` | `app/actions/runners.ts` | Clear runner cookie (switch user) |
-| `assignOrder()` | `app/actions/runners.ts` | Set/clear runner on an order (coordinator) |
-| `claimOrder()` | `app/actions/runners.ts` | Atomically claim order + set in_progress (runner) |
-| `getUnassignedOrders()` | `app/actions/runners.ts` | Orders with status=new and no runner |
-| `getRunnerOrders()` | `app/actions/runners.ts` | Non-done orders assigned to a specific runner |
-| `setLimits()` | `app/actions/limits.ts` | Set per-location order limits for an item |
-| `getLimitsForItem()` | `app/actions/limits.ts` | Get all limits for an item (admin UI) |
-| `getLimitsForLocation()` | `app/actions/limits.ts` | Get all limits for a location (volunteer form) |
-| `getLocationItemUsage()` | `app/actions/limits.ts` | Total ordered per item for a location |
+## Key Patterns
 
-### Component Architecture
+- All DB-dependent pages: `export const dynamic = 'force-dynamic'`
+- All mutations via `"use server"` functions
+- `cookies()` must be awaited (Next 15+ App Router)
+- better-sqlite3 transactions are synchronous (no async/await inside `db.transaction`)
+- Every stock change creates a log entry (audit trail)
+- Color palette: `bg-night`, `bg-grape`, `border-esbee`, `bg-cerise`, `bg-jayouh`
 
-**Client Components** (`"use client"`):
-- `CartProvider.tsx` - Cart state context (itemId → quantity delta, linkedOrderId)
-- `CartSummary.tsx` - Floating review panel + submit form (handles order fulfillment)
-- `CartInitializer.tsx` - Reads URL params to pre-populate cart from volunteer orders
-- `InventoryCard.tsx` - Item card with ordering buttons
-- `InventoryList.tsx` - Grid view with search/filter
-- `EditItemForm.tsx` - Item edit form with delete
-- `OrderHistoryClient.tsx` - Log table with edit/delete
-- `StatsDashboard.tsx` - Statistics display
-- `ToastProvider.tsx` - Toast notifications
-- `VolunteerRequestForm.tsx` - Mobile form for volunteers (`app/request/[slug]/`)
-- `LocationOrderHistory.tsx` - Order history per location (`app/request/[slug]/history/`)
-- `FulfillmentDashboard.tsx` - Kanban/list view for orders (`app/orders/`)
-- `RunnerApp.tsx` - Soft login + runner dashboard (`app/runner/`)
+## Webhook
 
-**Server Components**:
-- All page.tsx files fetch data and render client components
+Low stock alerts → `https://n8n.startglobal.org/webhook/4576bef6-c2b0-4560-852e-93e9cf7d72ae`. See `WEBHOOK_INTEGRATION.md`.
 
-### Key Patterns
-
-1. **Dynamic Rendering**: All database-dependent pages use `export const dynamic = 'force-dynamic'`
-2. **Optimistic UI**: Cart shows changes before server confirmation
-3. **Server Actions**: All mutations via `"use server"` functions
-4. **Audit Trail**: Every stock change creates a log entry
-
----
-
-## Deployment
-
-### Docker (Production)
-
-```bash
-# Build and deploy
-docker compose -f docker-compose.prod.yml down
-docker compose -f docker-compose.prod.yml build --no-cache
-docker compose -f docker-compose.prod.yml up -d
-```
-
-**Key files:**
-- `Dockerfile` - Multi-stage build with Alpine
-- `docker-compose.prod.yml` - Production config (port 3001)
-- `.dockerignore` - Excludes node_modules, .next, database files
-- `scripts/start.sh` - Container startup (handles permissions)
-- `scripts/init-db.js` - Database initialization
-
-### Environment Variables
-
-```env
-DATABASE_URL=/app/sqlite-data/sqlite.db
-NODE_ENV=production
-```
-
----
-
-## Webhook Integration
-
-Low stock alerts are sent via webhook when an item drops to or below `minThreshold`:
-
-**Endpoint:** `https://n8n.startglobal.org/webhook/4576bef6-c2b0-4560-852e-93e9cf7d72ae`
-
-**Payload:**
-```json
-{
-  "event": "low_stock_alert",
-  "item": { "id", "name", "sku", "category", "stock", "minThreshold" },
-  "timestamp": "ISO date"
-}
-```
-
-See `WEBHOOK_INTEGRATION.md` for setup details.
-
----
-
-## Current Limitations
+## Limitations
 
 - No user authentication (volunteer requests are public by design)
-- No role-based access control (order fulfillment dashboard is open)
-- `userName` in logs is free text input
+- No role-based access control
+- `userName` in logs is free text
 
-## Future Enhancements
+## Docs
 
-Potential improvements:
-- PIN protection for order fulfillment dashboard
-- User authentication for inventory managers
-- QR code generation for location URLs
-- Push notifications for new orders
-- Order history and analytics
-
----
-
-## File Reference
-
-### Core Files to Know
-
-| File | Purpose |
-|------|---------|
-| `db/schema.ts` | Database table definitions |
-| `app/actions.ts` | Item CRUD operations |
-| `app/actions/order.ts` | Order submission logic |
-| `app/actions/volunteer-orders.ts` | Volunteer order management |
-| `app/actions/limits.ts` | Location order limit management |
-| `components/CartProvider.tsx` | Cart state management |
-| `components/CartInitializer.tsx` | URL param cart loading |
-| `components/InventoryCard.tsx` | Main item UI component |
-| `app/request/[slug]/VolunteerRequestForm.tsx` | Volunteer mobile form |
-| `app/orders/FulfillmentDashboard.tsx` | Order fulfillment UI |
-| `next.config.ts` | Next.js config (standalone output) |
-| `drizzle.config.ts` | Database connection config |
-
-### Documentation
-
-| File | Purpose |
-|------|---------|
-| `CLAUDE.md` | This file - project overview |
-| `README.md` | Quick start guide |
-| `ADDING_ITEMS.md` | How to add inventory items |
-| `HETZNER_DEPLOY.md` | Production deployment guide |
-| `WEBHOOK_INTEGRATION.md` | Slack notification setup |
+`README.md` (quick start), `ADDING_ITEMS.md` (item guide), `HETZNER_DEPLOY.md` (deployment), `WEBHOOK_INTEGRATION.md` (Slack alerts).
