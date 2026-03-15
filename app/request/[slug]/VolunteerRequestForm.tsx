@@ -61,7 +61,22 @@ export function VolunteerRequestForm({ location, availableItems, limits, usage }
         });
     };
 
-    const totalItems = Object.values(quantities).reduce((sum, qty) => sum + qty, 0);
+    // Convert unit-based quantities to raw item counts
+    const getRawQuantities = (): Record<string, number> => {
+        const raw: Record<string, number> = {};
+        for (const [itemId, units] of Object.entries(quantities)) {
+            const item = availableItems.find(i => i.id === itemId);
+            const caseSize = (item?.quantityPerUnit || 1) > 1 ? (item?.quantityPerUnit || 1) : 1;
+            raw[itemId] = caseSize > 1 ? units * caseSize : units;
+        }
+        return raw;
+    };
+
+    const totalRawItems = Object.entries(quantities).reduce((sum, [itemId, units]) => {
+        const item = availableItems.find(i => i.id === itemId);
+        const caseSize = (item?.quantityPerUnit || 1) > 1 ? (item?.quantityPerUnit || 1) : 1;
+        return sum + (caseSize > 1 ? units * caseSize : units);
+    }, 0);
 
     const toggleCustomInput = (itemId: string) => {
         setCustomInputOpen(prev => ({
@@ -84,12 +99,12 @@ export function VolunteerRequestForm({ location, availableItems, limits, usage }
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (totalItems === 0) return;
+        if (totalRawItems === 0) return;
 
         setIsSubmitting(true);
         setError(null);
 
-        const result = await submitVolunteerRequest(location.id, quantities);
+        const result = await submitVolunteerRequest(location.id, getRawQuantities());
 
         setIsSubmitting(false);
 
@@ -302,14 +317,15 @@ export function VolunteerRequestForm({ location, availableItems, limits, usage }
                                 </h2>
                                 <div className="space-y-2">
                                     {itemsByCategory[category].map(item => {
-                                        const qty = quantities[item.id] || 0;
+                                        const qty = quantities[item.id] || 0; // units (cases for hasCase, items otherwise)
                                         const hasCase = (item.quantityPerUnit || 1) > 1;
                                         const caseSize = item.quantityPerUnit || 1;
                                         const unitName = item.unitName || 'case';
+                                        const rawQty = hasCase ? qty * caseSize : qty;
 
-                                        // Check if this item has a limit for this location
+                                        // Check if this item has a limit for this location (limits are in raw items)
                                         const maxLimit = limits[item.id];
-                                        const totalUsed = (usage[item.id] || 0) + qty;
+                                        const totalUsed = (usage[item.id] || 0) + rawQty;
                                         const hasLimit = maxLimit !== undefined;
                                         const limitReached = hasLimit && totalUsed >= maxLimit;
 
@@ -344,40 +360,41 @@ export function VolunteerRequestForm({ location, availableItems, limits, usage }
                                                         </div>
                                                         {qty > 0 && (
                                                             <span className="rounded-full bg-cerise px-3 py-1 text-sm font-bold text-white">
-                                                                {qty}
+                                                                {hasCase ? `${qty} ${unitName}${qty !== 1 ? 's' : ''}` : qty}
                                                             </span>
                                                         )}
                                                     </div>
                                                     {limitReached && qty === 0 ? null : (
                                                     <div className="flex flex-col gap-2">
                                                         <div className="flex gap-2">
-                                                            {hasCase && (
+                                                            {hasCase ? (
                                                                 <button
-                                                                    onClick={() => updateQuantity(item.id, caseSize)}
+                                                                    onClick={() => updateQuantity(item.id, 1)}
                                                                     disabled={limitReached}
                                                                     className="flex-1 rounded-lg bg-cerise px-4 py-3 text-sm font-bold text-white hover:bg-jayouh active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                                                                 >
                                                                     +1 {unitName} ({caseSize})
                                                                 </button>
-                                                            )}
-                                                            <button
-                                                                onClick={() => updateQuantity(item.id, 1)}
-                                                                disabled={limitReached}
-                                                                className={`rounded-lg bg-grape border border-esbee px-4 py-3 text-sm font-bold text-white hover:bg-esbee/50 active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed ${hasCase ? 'flex-1' : 'flex-1'}`}
-                                                            >
-                                                                +1 item
-                                                            </button>
-                                                            {!hasCase && (
-                                                                <button
-                                                                    onClick={() => toggleCustomInput(item.id)}
-                                                                    disabled={limitReached}
-                                                                    className={`flex-1 rounded-lg px-4 py-3 text-sm font-bold transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed ${customInputOpen[item.id]
-                                                                            ? 'bg-cerise text-white'
-                                                                            : 'bg-grape border border-esbee text-white hover:bg-esbee/30'
-                                                                        }`}
-                                                                >
-                                                                    Custom
-                                                                </button>
+                                                            ) : (
+                                                                <>
+                                                                    <button
+                                                                        onClick={() => updateQuantity(item.id, 1)}
+                                                                        disabled={limitReached}
+                                                                        className="flex-1 rounded-lg bg-grape border border-esbee px-4 py-3 text-sm font-bold text-white hover:bg-esbee/50 active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                                                                    >
+                                                                        +1 item
+                                                                    </button>
+                                                                    <button
+                                                                        onClick={() => toggleCustomInput(item.id)}
+                                                                        disabled={limitReached}
+                                                                        className={`flex-1 rounded-lg px-4 py-3 text-sm font-bold transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed ${customInputOpen[item.id]
+                                                                                ? 'bg-cerise text-white'
+                                                                                : 'bg-grape border border-esbee text-white hover:bg-esbee/30'
+                                                                            }`}
+                                                                    >
+                                                                        Custom
+                                                                    </button>
+                                                                </>
                                                             )}
                                                             {qty > 0 && (
                                                                 <button
@@ -432,13 +449,13 @@ export function VolunteerRequestForm({ location, availableItems, limits, usage }
                 <div className="mx-auto max-w-lg">
                     <button
                         onClick={() => setIsReviewOpen(true)}
-                        disabled={totalItems === 0}
+                        disabled={totalRawItems === 0}
                         className="w-full rounded-xl bg-cerise py-4 text-lg font-bold text-white hover:bg-jayouh disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.98] transition-all shadow-lg"
                     >
-                        {totalItems === 0 ? (
+                        {totalRawItems === 0 ? (
                             'Select Items to Request'
                         ) : (
-                            `Review Request (${totalItems} item${totalItems !== 1 ? 's' : ''})`
+                            `Review Request (${totalRawItems} item${totalRawItems !== 1 ? 's' : ''})`
                         )}
                     </button>
                 </div>
@@ -488,6 +505,9 @@ export function VolunteerRequestForm({ location, availableItems, limits, usage }
                                     .map(([itemId, qty]) => {
                                         const item = availableItems.find(i => i.id === itemId);
                                         if (!item) return null;
+                                        const hasCase = (item.quantityPerUnit || 1) > 1;
+                                        const caseSize = item.quantityPerUnit || 1;
+                                        const uName = item.unitName || 'case';
 
                                         return (
                                             <div
@@ -499,7 +519,14 @@ export function VolunteerRequestForm({ location, availableItems, limits, usage }
                                                     <p className="text-xs text-slate-400">{item.category}</p>
                                                 </div>
                                                 <div className="text-right">
-                                                    <p className="text-xl font-bold text-white">x{qty}</p>
+                                                    {hasCase ? (
+                                                        <>
+                                                            <p className="text-xl font-bold text-white">{qty} {uName}{qty !== 1 ? 's' : ''}</p>
+                                                            <p className="text-xs text-slate-400">({qty * caseSize} items)</p>
+                                                        </>
+                                                    ) : (
+                                                        <p className="text-xl font-bold text-white">x{qty}</p>
+                                                    )}
                                                 </div>
                                             </div>
                                         );

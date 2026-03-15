@@ -24,6 +24,8 @@ export interface OrderWithDetails {
         itemId: string;
         itemName: string;
         quantity: number;
+        quantityPerUnit: number | null;
+        unitName: string | null;
     }[];
 }
 
@@ -280,6 +282,8 @@ export async function getOrders(statusFilter?: OrderStatus | 'all') {
                 itemId: orderItems.itemId,
                 itemName: items.name,
                 quantity: orderItems.quantity,
+                quantityPerUnit: items.quantityPerUnit,
+                unitName: items.unitName,
             })
             .from(orderItems)
             .leftJoin(items, eq(orderItems.itemId, items.id));
@@ -311,6 +315,8 @@ export async function getOrders(statusFilter?: OrderStatus | 'all') {
                     itemId: oi.itemId,
                     itemName: oi.itemName || 'Unknown Item',
                     quantity: oi.quantity,
+                    quantityPerUnit: oi.quantityPerUnit ?? null,
+                    unitName: oi.unitName ?? null,
                 })),
             }));
 
@@ -360,6 +366,8 @@ export async function getOrdersByLocation(locationId: string) {
                 itemId: orderItems.itemId,
                 itemName: items.name,
                 quantity: orderItems.quantity,
+                quantityPerUnit: items.quantityPerUnit,
+                unitName: items.unitName,
             })
             .from(orderItems)
             .leftJoin(items, eq(orderItems.itemId, items.id))
@@ -390,6 +398,8 @@ export async function getOrdersByLocation(locationId: string) {
                 itemId: oi.itemId,
                 itemName: oi.itemName || 'Unknown Item',
                 quantity: oi.quantity,
+                quantityPerUnit: oi.quantityPerUnit ?? null,
+                unitName: oi.unitName ?? null,
             })),
         }));
 
@@ -432,6 +442,8 @@ export async function getOrderById(orderId: string) {
                 itemId: orderItems.itemId,
                 itemName: items.name,
                 quantity: orderItems.quantity,
+                quantityPerUnit: items.quantityPerUnit,
+                unitName: items.unitName,
             })
             .from(orderItems)
             .leftJoin(items, eq(orderItems.itemId, items.id))
@@ -453,6 +465,8 @@ export async function getOrderById(orderId: string) {
                 itemId: oi.itemId,
                 itemName: oi.itemName || 'Unknown Item',
                 quantity: oi.quantity,
+                quantityPerUnit: oi.quantityPerUnit ?? null,
+                unitName: oi.unitName ?? null,
             })),
         };
 

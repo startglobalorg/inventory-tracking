@@ -59,12 +59,25 @@ function OrderCard({
                     <p className="text-sm text-slate-200 whitespace-pre-wrap">{order.customRequest}</p>
                 ) : (
                     <ul className="space-y-1.5">
-                        {order.items.map(item => (
-                            <li key={item.id} className="flex justify-between gap-3 text-sm">
-                                <span className="text-slate-300 min-w-0 truncate">{item.itemName}</span>
-                                <span className="font-bold text-white shrink-0">×{item.quantity}</span>
-                            </li>
-                        ))}
+                        {order.items.map(item => {
+                            const perUnit = (item.quantityPerUnit || 1) > 1 ? item.quantityPerUnit! : 0;
+                            const units = perUnit > 0 ? Math.floor(item.quantity / perUnit) : 0;
+                            const uName = item.unitName || 'case';
+                            return (
+                                <li key={item.id} className="flex justify-between gap-3 text-sm">
+                                    <span className="text-slate-300 min-w-0 truncate">{item.itemName}</span>
+                                    {perUnit > 0 && units > 0 ? (
+                                        <span className="font-bold text-white shrink-0">
+                                            {units} {uName}{units !== 1 ? 's' : ''}
+                                            {' '}
+                                            <span className="font-normal text-slate-400">({item.quantity})</span>
+                                        </span>
+                                    ) : (
+                                        <span className="font-bold text-white shrink-0">×{item.quantity}</span>
+                                    )}
+                                </li>
+                            );
+                        })}
                     </ul>
                 )}
             </div>

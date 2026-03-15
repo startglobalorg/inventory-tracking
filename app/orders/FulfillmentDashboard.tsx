@@ -141,12 +141,27 @@ function OrderCard({
                     <p className="text-sm text-slate-200 whitespace-pre-wrap">{order.customRequest}</p>
                 ) : (
                     <ul className="space-y-1">
-                        {order.items.map(item => (
-                            <li key={item.id} className="flex justify-between text-sm">
-                                <span className="text-slate-300">{item.itemName}</span>
-                                <span className="font-bold text-white">x{item.quantity}</span>
-                            </li>
-                        ))}
+                        {order.items.map(item => {
+                            const perUnit = (item.quantityPerUnit || 1) > 1 ? item.quantityPerUnit! : 0;
+                            const units = perUnit > 0 ? Math.floor(item.quantity / perUnit) : 0;
+                            const remainder = perUnit > 0 ? item.quantity % perUnit : 0;
+                            const uName = item.unitName || 'case';
+                            return (
+                                <li key={item.id} className="flex justify-between text-sm">
+                                    <span className="text-slate-300">{item.itemName}</span>
+                                    {perUnit > 0 && units > 0 ? (
+                                        <span className="font-bold text-white">
+                                            {units} {uName}{units !== 1 ? 's' : ''}
+                                            {remainder > 0 ? ` + ${remainder}` : ''}
+                                            {' '}
+                                            <span className="font-normal text-slate-400">({item.quantity})</span>
+                                        </span>
+                                    ) : (
+                                        <span className="font-bold text-white">x{item.quantity}</span>
+                                    )}
+                                </li>
+                            );
+                        })}
                     </ul>
                 )}
             </div>
@@ -660,17 +675,32 @@ export function FulfillmentDashboard({ initialOrders, runners }: FulfillmentDash
                         ) : (
                             <table className="w-full border-collapse mb-6">
                                 <tbody>
-                                    {activePrintOrder.items.map(item => (
-                                        <tr key={item.id} className="border-b border-gray-100" style={{ breakInside: 'avoid' }}>
-                                            <td className="py-2 pr-3 w-5 align-middle">
-                                                <span className="inline-block w-4 h-4 border border-gray-400 rounded-sm"></span>
-                                            </td>
-                                            <td className="py-2 text-black align-middle">{item.itemName}</td>
-                                            <td className="py-2 text-right font-semibold text-black align-middle w-16">
-                                                &times;{item.quantity}
-                                            </td>
-                                        </tr>
-                                    ))}
+                                    {activePrintOrder.items.map(item => {
+                                        const perUnit = (item.quantityPerUnit || 1) > 1 ? item.quantityPerUnit! : 0;
+                                        const units = perUnit > 0 ? Math.floor(item.quantity / perUnit) : 0;
+                                        const remainder = perUnit > 0 ? item.quantity % perUnit : 0;
+                                        const uName = item.unitName || 'case';
+                                        return (
+                                            <tr key={item.id} className="border-b border-gray-100" style={{ breakInside: 'avoid' }}>
+                                                <td className="py-2 pr-3 w-5 align-middle">
+                                                    <span className="inline-block w-4 h-4 border border-gray-400 rounded-sm"></span>
+                                                </td>
+                                                <td className="py-2 text-black align-middle">{item.itemName}</td>
+                                                <td className="py-2 text-right font-semibold text-black align-middle w-24">
+                                                    {perUnit > 0 && units > 0 ? (
+                                                        <>
+                                                            {units} {uName}{units !== 1 ? 's' : ''}
+                                                            {remainder > 0 ? ` + ${remainder}` : ''}
+                                                            {' '}
+                                                            <span className="font-normal text-gray-400">({item.quantity})</span>
+                                                        </>
+                                                    ) : (
+                                                        <>&times;{item.quantity}</>
+                                                    )}
+                                                </td>
+                                            </tr>
+                                        );
+                                    })}
                                 </tbody>
                             </table>
                         )}

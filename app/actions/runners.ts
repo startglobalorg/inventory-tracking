@@ -168,6 +168,8 @@ export async function getUnassignedOrders() {
                 itemId: orderItems.itemId,
                 itemName: items.name,
                 quantity: orderItems.quantity,
+                quantityPerUnit: items.quantityPerUnit,
+                unitName: items.unitName,
             })
             .from(orderItems)
             .leftJoin(items, eq(orderItems.itemId, items.id))
@@ -196,6 +198,8 @@ export async function getUnassignedOrders() {
                 itemId: oi.itemId,
                 itemName: oi.itemName || 'Unknown Item',
                 quantity: oi.quantity,
+                quantityPerUnit: oi.quantityPerUnit ?? null,
+                unitName: oi.unitName ?? null,
             })),
         }));
 
@@ -236,6 +240,8 @@ export async function getRunnerOrders(runnerId: string) {
                 itemId: orderItems.itemId,
                 itemName: items.name,
                 quantity: orderItems.quantity,
+                quantityPerUnit: items.quantityPerUnit,
+                unitName: items.unitName,
             })
             .from(orderItems)
             .leftJoin(items, eq(orderItems.itemId, items.id))
@@ -272,6 +278,8 @@ export async function getRunnerOrders(runnerId: string) {
                 itemId: oi.itemId,
                 itemName: oi.itemName || 'Unknown Item',
                 quantity: oi.quantity,
+                quantityPerUnit: oi.quantityPerUnit ?? null,
+                unitName: oi.unitName ?? null,
             })),
         }));
 

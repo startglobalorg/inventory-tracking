@@ -161,7 +161,19 @@ export function LocationOrderHistory({ location, initialOrders }: LocationOrderH
                                                         {order.items.map(item => (
                                                             <li key={item.id} className="flex justify-between text-sm">
                                                                 <span className="text-slate-300">{item.itemName}</span>
-                                                                <span className="font-bold text-white">×{item.quantity}</span>
+                                                                {(() => {
+                                                                    const perUnit = (item.quantityPerUnit || 1) > 1 ? item.quantityPerUnit! : 0;
+                                                                    const units = perUnit > 0 ? Math.floor(item.quantity / perUnit) : 0;
+                                                                    const uName = item.unitName || 'case';
+                                                                    return perUnit > 0 && units > 0 ? (
+                                                                        <span className="font-bold text-white">
+                                                                            {units} {uName}{units !== 1 ? 's' : ''}{' '}
+                                                                            <span className="font-normal text-slate-400">({item.quantity})</span>
+                                                                        </span>
+                                                                    ) : (
+                                                                        <span className="font-bold text-white">×{item.quantity}</span>
+                                                                    );
+                                                                })()}
                                                             </li>
                                                         ))}
                                                     </ul>
@@ -223,7 +235,19 @@ export function LocationOrderHistory({ location, initialOrders }: LocationOrderH
                                                         {order.items.map(item => (
                                                             <li key={item.id} className="flex justify-between text-sm">
                                                                 <span className="text-slate-300">{item.itemName}</span>
-                                                                <span className="font-bold text-white">×{item.quantity}</span>
+                                                                {(() => {
+                                                                    const perUnit = (item.quantityPerUnit || 1) > 1 ? item.quantityPerUnit! : 0;
+                                                                    const units = perUnit > 0 ? Math.floor(item.quantity / perUnit) : 0;
+                                                                    const uName = item.unitName || 'case';
+                                                                    return perUnit > 0 && units > 0 ? (
+                                                                        <span className="font-bold text-white">
+                                                                            {units} {uName}{units !== 1 ? 's' : ''}{' '}
+                                                                            <span className="font-normal text-slate-400">({item.quantity})</span>
+                                                                        </span>
+                                                                    ) : (
+                                                                        <span className="font-bold text-white">×{item.quantity}</span>
+                                                                    );
+                                                                })()}
                                                             </li>
                                                         ))}
                                                     </ul>
